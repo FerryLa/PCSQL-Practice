@@ -1,0 +1,75 @@
+name: Daily Close (mark ❌ for missing)
+
+on:
+  schedule:
+    - cron: '5 15 * * *'   # 매일 00:05 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
+      START_DATE: '2025-10-02'
+      END_DATE: '2025-11-21'
+      README_PATH: 01_cert_week_7/README.md
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/develop
+
+      - name: Mark ❌ for yesterday if empty
+        uses: actions/github-script@v7
+        env:
+          README_PATH: ${{ env.README_PATH }}
+        with:
+          script: |
+            const fs = require('fs');  // core는 전역 제공
+            const path = process.env.README_PATH;
+
+            if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
+            let md = fs.readFileSync(path,'utf8');
+            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
+            const si=md.indexOf(S), ei=md.indexOf(E);
+            if (si<0 || ei<0) { core.warning(`Skip: progress markers not found in ${path}`); return; }
+
+            // 어제 날짜(KST)
+            const nowKST = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+            nowKST.setDate(nowKST.getDate()-1);
+            const z=n=>String(n).padStart(2,'0');
+            const target=`${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
+            core.info(`Target date (KST-1d): ${target}`);
+
+            const before=md.slice(0, si+S.length), block=md.slice(si+S.length, ei), after=md.slice(ei);
+            let changed=false;
+            const EMPTY = new Set(['', '⬜', '🟪']);  // ← 보라 네모도 빈 칸 취급
+            
+            const updated = block.split('\n').map(line=>{
+              const m=line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
+              if(!m) return line;
+              const [,date,statusRaw,rest]=m;
+              if(date!==target) return line;
+              const s=statusRaw.trim();
+              if(s===''||s==='⬜'){ changed=true; return `| ${date} | ❌ | ${rest} |`; }
+              return line;
+            });
+
+            if(!changed){ core.info(`No change needed for ${target}`); return; }
+            const out = before+'\n'+updated.join('\n').replace(/^\n+/,'')+after;
+            fs.writeFileSync(path, out, 'utf8');
+            core.info(`Marked ${target} as ❌`);
+
+      - name: PR to develop
+        uses: peter-evans/create-pull-request@v6
+        with:
+          base: develop
+          branch: automation/daily-close
+          title: "chore: daily close (mark ❌)"
+          commit-message: "chore: daily close (mark ❌)"
+          add-paths: |
+            ${{ env.README_PATH }}
