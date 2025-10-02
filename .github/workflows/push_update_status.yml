@@ -118,7 +118,9 @@ jobs:
             const block  = md.slice(si + S.length, ei);
             const after  = md.slice(ei);
 
+            const EMPTY = new Set(['', '⬜', '🟪']);   // ← 보라 네모도 빈 칸 취급
             let changedFlag = false;
+            
             const linesUpd = block.split('\n').map(line => {
               const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
               if (!m) return line;
