@@ -55,21 +55,79 @@ jobs:
           git fetch --depth=2 origin "${GITHUB_REF_NAME}"
           git diff --name-only HEAD~1 HEAD || true
 
-      # ── 실제 갱신 로직 자리 (현재는 no-op, core import 필수) ─────────
-      - name: Update README table (noop-safe)
+      # ── 실제 갱신 로직 (✅/⏰ 자동 반영) ──────────────────────────────────
+      - name: Update README table (auto mark ✅/⏰)
         uses: actions/github-script@v7
         env:
           README_PATH: ${{ env.README_PATH }}
+          START_DATE: ${{ env.START_DATE }}
+          END_DATE: ${{ env.END_DATE }}
         with:
           script: |
-            const fs = require('fs');
-            const core = require('@actions/core');
+            const fs = require('fs');               // core, github, context는 전역 제공
             const path = process.env.README_PATH;
+            
+            // 0) 파일/마커 확인
             if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
             let md = fs.readFileSync(path, 'utf8');
-            if (!md.includes('<!-- PROGRESS:START -->')) { core.warning('Skip: markers missing'); return; }
-            // TODO: 여기서 ✅/⏰ 갱신 로직을 넣으세요.
-            fs.writeFileSync(path, md);
+            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
+            const si=md.indexOf(S), ei=md.indexOf(E);
+            if (si<0 || ei<0) { core.warning(`Skip: progress markers missing in ${path}`); return; }
+            
+            // 1) 이번 푸시에서 변경된 파일들에서 날짜 추출(01_cert_week_7/solutions/YYYY/MM/DD/...)
+            const changed = (context.payload.commits||[]).flatMap(c => c.added.concat(c.modified)).filter(Boolean);
+            const dateSet = new Set();
+            const re = /(?:^|\/)solutions\/(\d{4})\/(\d{2})\/(\d{2})\//;
+            for (const f of changed) {
+              const m = f.match(re);
+              if (m) dateSet.add(`${m[1]}-${m[2]}-${m[3]}`);
+            }
+            if (dateSet.size === 0) { core.info('No solution-date found in changed paths. Skip.'); return; }
+            
+            // 2) KST now, 오늘/어제 판단
+            const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+            const z = n => String(n).padStart(2,'0');
+            const today = `${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
+            const yesterdayObj = new Date(nowKST); yesterdayObj.setDate(yesterdayObj.getDate()-1);
+            const yesterday = `${yesterdayObj.getFullYear()}-${z(yesterdayObj.getMonth()+1)}-${z(yesterdayObj.getDate())}`;
+            const hour = nowKST.getHours();
+            
+            // 3) 표 블록만 수정
+            const before = md.slice(0, si + S.length);
+            const block  = md.slice(si + S.length, ei);
+            const after  = md.slice(ei);
+            
+            const lines = block.split('\n');
+            let changedFlag = false;
+            
+            const linesUpd = lines.map(line => {
+              // "| 2025-10-02 | ⬜ | ..." 형태만 잡는다
+              const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
+              if (!m) return line;
+              const [, date, statusRaw, rest] = m;
+              const status = statusRaw.trim();
+            
+              // 날짜 후보가 아니면 통과
+              if (!dateSet.has(date)) return line;
+            
+              // 상태 결정: 오늘 → ✅, 어제+심야(0~5시) → ⏰
+              let newMark = null;
+              if (date === today) newMark = '✅';
+              else if (date === yesterday && hour < 6) newMark = '⏰';
+            
+              if (!newMark) return line;                 // 규칙에 안 걸리면 패스
+              if (status === '' || status === '⬜') {     // 비었을 때만 덮어쓴다
+                changedFlag = true;
+                return `| ${date} | ${newMark} | ${rest} |`;
+              }
+              return line;                                // 이미 기록된 건 존중
+            });
+            
+            if (!changedFlag) { core.info('No table changes needed.'); return; }
+            
+            const out = before + '\n' + linesUpd.join('\n').replace(/^\n+/, '') + after;
+            fs.writeFileSync(path, out, 'utf8');
+            core.info(`Updated ${path} for dates: ${[...dateSet].join(', ')}`);
 
       # feature/* 에서는 현재 브랜치에 커밋
       - name: Commit to feature branch
