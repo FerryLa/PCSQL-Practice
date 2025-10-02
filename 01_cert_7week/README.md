@@ -18,6 +18,15 @@
 
 ---
 
+## 🧑‍💻 참고할 만한 문제 소스 by [SKT FLY AI 6기 PCSQL 부수기](https://github.com/Hyubbbb/FLY_PCSQL?tab=readme-ov-file)
+[Programmers 공식 샘플 문제](https://certi.programmers.co.kr/about/sample)  
+[Programmers SQL 고득점 Kit](https://school.programmers.co.kr/learn/challenges?tab=sql_practice_kit)  
+[HackerRank](https://www.hackerrank.com/domains/sql?ref=blog.selectfromuser.com)  
+[SolveSQL](https://solvesql.com/?ref=blog.selectfromuser.com)  
+[LeetCode](https://leetcode.com/studyplan/top-sql-50/)
+
+---
+
 ## 🎯 시험 일정
 [프로그래머스 인증시험 사이트](https://certi.programmers.co.kr/tryouts) 
 
@@ -92,3 +101,14 @@
 - [ ] 11/16: 🏆 **SQLD 시험**
 - [ ] 11/18: 미니프로젝트 테스트 & GitHub 정리
 - [ ] 11월 4째주: 🏆 **PCSQL 시험**
+
+---
+
+## ✅ Daily Progress (Auto)
+
+<!-- PROGRESS:START -->
+| Date | Status | Note |
+|------|--------|------|
+| 2024-10-03 | ⬜ |  |
+<!-- PROGRESS:END -->
+
