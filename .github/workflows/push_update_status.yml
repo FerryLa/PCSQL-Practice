@@ -64,7 +64,7 @@ jobs:
           END_DATE: ${{ env.END_DATE }}
         with:
           script: |
-            const fs = require('fs');               // core, github, context는 전역 제공
+            const fs = require('fs');   // core, github, context 전역 제공
             const path = process.env.README_PATH;
             
             // 0) 파일/마커 확인
@@ -74,22 +74,34 @@ jobs:
             const si=md.indexOf(S), ei=md.indexOf(E);
             if (si<0 || ei<0) { core.warning(`Skip: progress markers missing in ${path}`); return; }
             
-            // 1) 이번 푸시에서 변경된 파일들에서 날짜 추출(01_cert_week_7/solutions/YYYY/MM/DD/...)
-            const changed = (context.payload.commits||[]).flatMap(c => c.added.concat(c.modified)).filter(Boolean);
+            // 1) 변경 파일 안전하게 수집 (added/modified/removed가 없을 수도 있음)
+            const commits = Array.isArray(context.payload.commits) ? context.payload.commits : [];
+            const changedPaths = [];
+            for (const c of commits) {
+              const added = Array.isArray(c.added) ? c.added : [];
+              const modified = Array.isArray(c.modified) ? c.modified : [];
+              const removed = Array.isArray(c.removed) ? c.removed : [];
+              for (const p of [...added, ...modified, ...removed]) changedPaths.push(p);
+            }
+            core.startGroup('Changed paths');
+            for (const p of changedPaths) core.info(p);
+            core.endGroup();
+            
+            // 1-1) solutions/YYYY/MM/DD/ 날짜 뽑기
             const dateSet = new Set();
             const re = /(?:^|\/)solutions\/(\d{4})\/(\d{2})\/(\d{2})\//;
-            for (const f of changed) {
-              const m = f.match(re);
+            for (const f of changedPaths) {
+              const m = typeof f === 'string' ? f.match(re) : null;
               if (m) dateSet.add(`${m[1]}-${m[2]}-${m[3]}`);
             }
             if (dateSet.size === 0) { core.info('No solution-date found in changed paths. Skip.'); return; }
             
-            // 2) KST now, 오늘/어제 판단
+            // 2) 오늘/어제(KST)
             const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
             const z = n => String(n).padStart(2,'0');
             const today = `${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
-            const yesterdayObj = new Date(nowKST); yesterdayObj.setDate(yesterdayObj.getDate()-1);
-            const yesterday = `${yesterdayObj.getFullYear()}-${z(yesterdayObj.getMonth()+1)}-${z(yesterdayObj.getDate())}`;
+            const yObj = new Date(nowKST); yObj.setDate(yObj.getDate()-1);
+            const yesterday = `${yObj.getFullYear()}-${z(yObj.getMonth()+1)}-${z(yObj.getDate())}`;
             const hour = nowKST.getHours();
             
             // 3) 표 블록만 수정
@@ -101,26 +113,23 @@ jobs:
             let changedFlag = false;
             
             const linesUpd = lines.map(line => {
-              // "| 2025-10-02 | ⬜ | ..." 형태만 잡는다
               const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
               if (!m) return line;
               const [, date, statusRaw, rest] = m;
               const status = statusRaw.trim();
             
-              // 날짜 후보가 아니면 통과
               if (!dateSet.has(date)) return line;
             
-              // 상태 결정: 오늘 → ✅, 어제+심야(0~5시) → ⏰
               let newMark = null;
               if (date === today) newMark = '✅';
               else if (date === yesterday && hour < 6) newMark = '⏰';
             
-              if (!newMark) return line;                 // 규칙에 안 걸리면 패스
-              if (status === '' || status === '⬜') {     // 비었을 때만 덮어쓴다
+              if (!newMark) return line;
+              if (status === '' || status === '⬜') {
                 changedFlag = true;
                 return `| ${date} | ${newMark} | ${rest} |`;
               }
-              return line;                                // 이미 기록된 건 존중
+              return line;
             });
             
             if (!changedFlag) { core.info('No table changes needed.'); return; }
