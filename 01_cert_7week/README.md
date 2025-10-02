@@ -19,6 +19,8 @@
 ---
 
 ## 🎯 시험 일정
+[프로그래머스 인증시험 사이트](https://certi.programmers.co.kr/tryouts)
+[데이터자격검정 시험 일정](https://www.dataq.or.kr/www/accept/schedule.do)
 
 - 10월 23일: PCSQL 시험
 - 11월 2일: ADsP 시험
@@ -29,12 +31,6 @@
 
 ## 📅 Weekly Checklist
 
-### Week 0 (10/02)
-
-- [x] GitHub 레포 세팅 (README 작성, Week_0 폴더 생성)
-- [x] 루틴 확정 및 첫 커밋
-
----
 
 ### Week 1 (10/03 ~ 10/09)
 
