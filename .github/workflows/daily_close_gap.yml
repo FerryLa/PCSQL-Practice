@@ -47,6 +47,8 @@ jobs:
 
             const before=md.slice(0, si+S.length), block=md.slice(si+S.length, ei), after=md.slice(ei);
             let changed=false;
+            const EMPTY = new Set(['', '⬜', '🟪']);  // ← 보라 네모도 빈 칸 취급
+            
             const updated = block.split('\n').map(line=>{
               const m=line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
               if(!m) return line;
@@ -61,7 +63,7 @@ jobs:
             const out = before+'\n'+updated.join('\n').replace(/^\n+/,'')+after;
             fs.writeFileSync(path, out, 'utf8');
             core.info(`Marked ${target} as ❌`);
-      
+
       - name: PR to develop
         uses: peter-evans/create-pull-request@v6
         with:
