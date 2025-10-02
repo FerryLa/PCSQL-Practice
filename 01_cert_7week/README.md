@@ -19,7 +19,8 @@
 ---
 
 ## 🎯 시험 일정
-[프로그래머스 인증시험 사이트](https://certi.programmers.co.kr/tryouts)
+[프로그래머스 인증시험 사이트](https://certi.programmers.co.kr/tryouts) 
+
 [데이터자격검정 시험 일정](https://www.dataq.or.kr/www/accept/schedule.do)
 
 - 10월 23일: PCSQL 시험
