@@ -12,6 +12,7 @@ jobs:
   mark:
     runs-on: ubuntu-latest
     env:
+      README_PATH: 01_cert_week_7/README.md
       TZ: Asia/Seoul
       START_DATE: '2025-10-02'
       END_DATE:   '2025-11-21'
