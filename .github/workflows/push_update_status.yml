@@ -1,9 +1,11 @@
 name: Update Daily Status on Push
+
 on:
   push:
-    branches: ['feature/**','develop']
+    branches: ['feature/**', 'develop']
     paths:
       - '**/solutions/**'
+      # 워크플로 수정만으로 실행되는 게 싫으면 아래 줄을 지워라
       - '.github/workflows/push_update_status.yml'
 
 permissions:
@@ -16,48 +18,60 @@ jobs:
     env:
       TZ: Asia/Seoul
       START_DATE: '2025-10-02'
-      END_DATE:   '2025-11-21'
-      README_PATH: 01_cert_week_7/README.md        # ← 여기를 네 파일로 고정
+      END_DATE: '2025-11-21'
+      README_PATH: 01_cert_week_7/README.md
     steps:
-      - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref }} }
+      - name: Checkout current ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-      # [디버그 1] 컨텍스트 확인
+      # ── 디버그 1: 컨텍스트 ───────────────────────────────────────────
       - name: Debug context
         run: |
           echo "branch=${GITHUB_REF_NAME}"
           echo "repo=${GITHUB_REPOSITORY}"
           echo "readme=${README_PATH}"
-          test -f "${README_PATH}" && echo "README exists ✅" || (echo "README missing ❌" && exit 0)
+          if [ -f "${README_PATH}" ]; then
+            echo "README exists ✅"
+          else
+            echo "README missing ❌"
+            exit 0
+          fi
 
-      # [디버그 2] 마커 유무 확인
+      # ── 디버그 2: 마커 존재 확인 ─────────────────────────────────────
       - name: Check progress markers
         run: |
-          if ! grep -q "<!-- PROGRESS:START -->" "${README_PATH}"; then
-            echo "No markers. Skip."; exit 0; fi
-          echo "Markers found."
+          if grep -q "<!-- PROGRESS:START -->" "${README_PATH}"; then
+            echo "Markers found."
+          else
+            echo "No markers. Skip."
+            exit 0
+          fi
 
-      # [디버그 3] 변경된 파일 목록
+      # ── 디버그 3: 변경 파일 목록 ─────────────────────────────────────
       - name: Show changed files in push
         run: |
-          git fetch --depth=2 origin "${GITHUB_REF}"
+          git fetch --depth=2 origin "${GITHUB_REF_NAME}"
           git diff --name-only HEAD~1 HEAD || true
 
-      # 실제 갱신 로직(예: 그대로 둬도 무해, 네 갱신 스크립트로 교체 가능)
+      # ── 실제 갱신 로직 자리 (현재는 no-op, core import 필수) ─────────
       - name: Update README table (noop-safe)
         uses: actions/github-script@v7
         env:
           README_PATH: ${{ env.README_PATH }}
         with:
           script: |
-            const fs = require('fs'), core = require('@actions/core');
+            const fs = require('fs');
+            const core = require('@actions/core');
             const path = process.env.README_PATH;
             if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
             let md = fs.readFileSync(path, 'utf8');
             if (!md.includes('<!-- PROGRESS:START -->')) { core.warning('Skip: markers missing'); return; }
-            // TODO: 여기서 ✅/⏰ 갱신. 일단 파일은 그대로 둡니다.
+            // TODO: 여기서 ✅/⏰ 갱신 로직을 넣으세요.
+            fs.writeFileSync(path, md);
 
-      # feature/* 에서는 현재 브랜치에만 커밋
+      # feature/* 에서는 현재 브랜치에 커밋
       - name: Commit to feature branch
         if: startsWith(github.ref_name, 'feature/')
         run: |
@@ -67,7 +81,7 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: mark daily status"
           git push origin HEAD:${{ github.ref_name }}
 
-      # develop 에서는 PR로만
+      # develop 에서는 PR만
       - name: Create PR to develop
         if: github.ref_name == 'develop'
         uses: peter-evans/create-pull-request@v6
