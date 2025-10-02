@@ -2,7 +2,9 @@ name: Update Daily Status on Push
 on:
   push:
     branches: ['feature/**','develop']
-    paths: ['**/solutions/**', '.github/workflows/push_update_status.yml']
+    paths:
+      - '**/solutions/**'
+      - '.github/workflows/push_update_status.yml'
 
 permissions:
   contents: write
@@ -12,26 +14,60 @@ jobs:
   mark:
     runs-on: ubuntu-latest
     env:
-      README_PATH: 01_cert_week_7/README.md
       TZ: Asia/Seoul
       START_DATE: '2025-10-02'
       END_DATE:   '2025-11-21'
+      README_PATH: 01_cert_week_7/README.md        # ← 여기를 네 파일로 고정
     steps:
       - uses: actions/checkout@v4
         with: { ref: ${{ github.ref }} }
 
-      # README 갱신 로직은 루트의 README.md를 수정하도록 구현
+      # [디버그 1] 컨텍스트 확인
+      - name: Debug context
+        run: |
+          echo "branch=${GITHUB_REF_NAME}"
+          echo "repo=${GITHUB_REPOSITORY}"
+          echo "readme=${README_PATH}"
+          test -f "${README_PATH}" && echo "README exists ✅" || (echo "README missing ❌" && exit 0)
 
+      # [디버그 2] 마커 유무 확인
+      - name: Check progress markers
+        run: |
+          if ! grep -q "<!-- PROGRESS:START -->" "${README_PATH}"; then
+            echo "No markers. Skip."; exit 0; fi
+          echo "Markers found."
+
+      # [디버그 3] 변경된 파일 목록
+      - name: Show changed files in push
+        run: |
+          git fetch --depth=2 origin "${GITHUB_REF}"
+          git diff --name-only HEAD~1 HEAD || true
+
+      # 실제 갱신 로직(예: 그대로 둬도 무해, 네 갱신 스크립트로 교체 가능)
+      - name: Update README table (noop-safe)
+        uses: actions/github-script@v7
+        env:
+          README_PATH: ${{ env.README_PATH }}
+        with:
+          script: |
+            const fs = require('fs'), core = require('@actions/core');
+            const path = process.env.README_PATH;
+            if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
+            let md = fs.readFileSync(path, 'utf8');
+            if (!md.includes('<!-- PROGRESS:START -->')) { core.warning('Skip: markers missing'); return; }
+            // TODO: 여기서 ✅/⏰ 갱신. 일단 파일은 그대로 둡니다.
+
+      # feature/* 에서는 현재 브랜치에만 커밋
       - name: Commit to feature branch
         if: startsWith(github.ref_name, 'feature/')
         run: |
           git config user.name "actions-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add README.md
+          git add "${{ env.README_PATH }}"
           git diff --cached --quiet || git commit -m "chore: mark daily status"
           git push origin HEAD:${{ github.ref_name }}
 
-      # develop 에서는 자동 PR만 열기
+      # develop 에서는 PR로만
       - name: Create PR to develop
         if: github.ref_name == 'develop'
         uses: peter-evans/create-pull-request@v6
@@ -40,3 +76,5 @@ jobs:
           branch: automation/readme-progress
           title: "chore: update README progress (push trigger)"
           commit-message: "chore: update README progress (push trigger)"
+          add-paths: |
+            ${{ env.README_PATH }}
