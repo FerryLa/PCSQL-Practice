@@ -25,7 +25,7 @@ jobs:
       - name: Mark ❌ for yesterday if empty
         uses: actions/github-script@v7
         env:
-          README_PATH: ${{ env.README_PATH }}
+          README_PATH: 01_cert_week_7/README.md
         with:
           script: |
             const fs = require('fs');
@@ -55,4 +55,4 @@ jobs:
           title: "chore: daily close (mark ❌)"
           commit-message: "chore: daily close (mark ❌)"
           add-paths: |
-            ${{ env.README_PATH }}
+            01_cert_week_7/README.md
