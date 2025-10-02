@@ -1,52 +1,125 @@
-# Github Action
 
-## 1. 실행권한 부여 + 테스트
+markdown
+# 🚀 GitHub 자동화 스터디 저장소
 
-``` 
-bash
+코딩 풀이를 날짜별로 정리하고, GitHub Actions를 통해 README.md에 자동으로 ✅ / ⏰ / ❌ 상태를 갱신합니다.
 
+---
+
+## 🛠️ 실행 스크립트 사용법
+
+```bash
 chmod +x scripts/new_day.sh
-./scripts/new_day.sh 2025-10-03   # ← 실행하면 solutions/2025/10/03/{python,sql,java}/ 생성
+./scripts/new_day.sh 2025-10-03
 ```
-  
-윈도우 Git Bash에서 권한이 안 먹히면:
 
+- 실행 시: `solutions/2025/10/03/{python,sql,java}/` 폴더 생성됨
 
-```
-bash
+🔧 Git Bash에서 권한이 안 먹힐 경우:
 
+```bash
 git update-index --chmod=+x scripts/new_day.sh
 ```
 
-## 2. 두 개 YAML 파일 내용
-둘 다 저장소 루트의 .github/workflows/ 폴더에 넣는다. 날짜는 네 일정에 맞게 바꿔도 되고, 아래는 2025-10-03 시작, 2025-11-21 종료 기준
-- 풀이 파일을 solutions/YYYY/MM/DD/**에 넣고 푸시하면 README의 자동 구역을 **✅ 또는 ⏰**로 갱신
+---
 
-## 3. 저장소 Actions 활성화
-Repo → Settings → Actions → General → Allow all actions and reusable workflows
-- README.md에 자동 구역이 정확히
-- 두 워크플로가 .github/workflows/ 아래에 있고, permissions: contents: write 들어가 있는지 확인.
+## ⚙️ GitHub Actions 설정
 
-## 4. 푸시 트리거 빠른 수동 테스트 (✅/⏰ 갱신 확인)
+### 1. 워크플로 파일 위치
 
-오늘 날짜로 더미 파일 하나 넣고 푸시한다. 액션이 자동으로 돈다.
+`.github/workflows/` 폴더에 아래 두 파일을 넣습니다:
 
-1) 날짜 폴더 생성 (이미 스크립트 있으면 그걸로)
+- `update-daily-status.yml`: 풀이 푸시 시 ✅ 또는 ⏰ 갱신
+- `daily-schedule.yml`: 매일 새벽 6시 자동 실행 → 풀이 없으면 ❌ 갱신
+
+### 2. Actions 활성화
+
+- 저장소 → Settings → Actions → General
+- ✅ **Allow all actions and reusable workflows** 체크
+- 두 YAML 파일에 아래 권한 포함 확인:
+
+```yaml
+permissions:
+  contents: write
 ```
+
+---
+
+## ✅ 수동 푸시 테스트
+
+1. 더미 파일 생성:
+
+```bash
 mkdir -p solutions/2025/10/03/python
-printf 'print("hello")\n' > solutions/2025/10/03/python/hello.py
+echo 'print("hello")' > solutions/2025/10/03/python/hello.py
 ```
 
-2) 커밋/푸시
-```
+2. 커밋 & 푸시:
+
+```bash
 git add solutions/2025/10/03/python/hello.py
 git commit -m "feat: add daily solution (2025-10-03)"
 git push
 ```
-확인:
-GitHub → Actions 탭 → Update Daily Status on Push 실행됨
-끝나면 README의 해당 날짜가 ✅ 또는 **⏰**로 바뀌어야 한다
-서울시간 23:59:59 전에 첫 푸시면 ✅
-그 이후 새벽 06:00 전이면 ⏰
 
-## 5. 스케줄 트리거 테스트(❌ 마감) 빠르게 확인
+3. 확인:
+
+- GitHub → Actions 탭 → `Update Daily Status on Push` 실행됨
+- README.md의 해당 날짜가 다음 기준에 따라 갱신됨:
+    - ✅: 서울시간 기준 23:59:59 이전 첫 푸시
+    - ⏰: 그 이후 ~ 익일 06:00 사이 푸시
+
+---
+
+## ⏰ 스케줄 트리거 테스트
+
+- `daily-schedule.yml`은 매일 새벽 6시(KST) 자동 실행
+- 풀이가 없으면 해당 날짜는 ❌로 표시됨
+
+---
+
+## 🔐 브랜치 보호 설정 (권장)
+
+### 1. Ruleset 생성
+
+- 저장소 → Settings → Branches → Rulesets
+- `main`, `develop` 각각에 대해 아래 설정 적용
+
+### 2. 필수 옵션
+
+- ✅ Require a pull request before merging
+- ✅ Block force pushes
+- ✅ Restrict deletions
+- ✅ Dismiss stale approvals when new commits are pushed
+- ➕ Require approvals: 1인 팀이면 0~1, 협업이면 1~2
+
+### 3. 선택 옵션
+
+- Require linear history: 스쿼시/리베이스만 허용
+- Require status checks to pass: CI 사용 시 필수 체크 지정
+
+---
+
+## 📁 풀이 파일 구조
+
+```text
+solutions/
+└── YYYY/
+    └── MM/
+        └── DD/
+            ├── python/
+            ├── sql/
+            └── java/
+```
+
+- 커밋 메시지 예시: `feat: add daily solution (2025-10-03)`
+- README.md는 날짜별 풀이 여부에 따라 자동 상태 갱신됨
+
+---
+
+## 📌 기타 참고
+
+- `scripts/update_readme.py`가 핵심 자동화 스크립트입니다
+- `requirements.txt`에 필요한 Python 패키지 명시
+- GitHub Issue 또는 Projects 탭을 활용해 적립/보상 관리 가능
+```
