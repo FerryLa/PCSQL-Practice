@@ -1,9 +1,11 @@
 name: Update Daily Status on Push
+
 on:
   push:
-    branches: ['feature/**','develop']
+    branches: ['feature/**', 'develop']
     paths:
       - '**/solutions/**'
+      # 워크플로 파일만 고쳐도 테스트하고 싶으면 유지, 아니면 이 줄 지워라
       - '.github/workflows/push_update_status.yml'
 
 permissions:
@@ -17,47 +19,133 @@ jobs:
       TZ: Asia/Seoul
       START_DATE: '2025-10-02'
       END_DATE:   '2025-11-21'
-      README_PATH: 01_cert_week_7/README.md        # ← 여기를 네 파일로 고정
-    steps:
-      - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref }} }
+      README_PATH: 01_cert_week_7/README.md
 
-      # [디버그 1] 컨텍스트 확인
+    steps:
+      # HEAD~1과 비교하려면 최소 2개 커밋을 가져와야 한다
+      - name: Checkout current ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 2
+
+      # ── 디버그 1: 컨텍스트 ───────────────────────────────────────────
       - name: Debug context
         run: |
           echo "branch=${GITHUB_REF_NAME}"
           echo "repo=${GITHUB_REPOSITORY}"
           echo "readme=${README_PATH}"
-          test -f "${README_PATH}" && echo "README exists ✅" || (echo "README missing ❌" && exit 0)
+          if [ -f "${README_PATH}" ]; then
+            echo "README exists ✅"
+          else
+            echo "README missing ❌"
+            exit 0
+          fi
 
-      # [디버그 2] 마커 유무 확인
+      # ── 디버그 2: 마커 존재 확인 ─────────────────────────────────────
       - name: Check progress markers
         run: |
-          if ! grep -q "<!-- PROGRESS:START -->" "${README_PATH}"; then
-            echo "No markers. Skip."; exit 0; fi
-          echo "Markers found."
+          if grep -q "<!-- PROGRESS:START -->" "${README_PATH}"; then
+            echo "Markers found."
+          else
+            echo "No markers. Skip."
+            exit 0
+          fi
 
-      # [디버그 3] 변경된 파일 목록
+      # ── 디버그 3: 변경 파일 목록 ─────────────────────────────────────
       - name: Show changed files in push
         run: |
-          git fetch --depth=2 origin "${GITHUB_REF}"
           git diff --name-only HEAD~1 HEAD || true
 
-      # 실제 갱신 로직(예: 그대로 둬도 무해, 네 갱신 스크립트로 교체 가능)
-      - name: Update README table (noop-safe)
+      # ── 실제 갱신 로직 (✅/⏰ 자동 반영) ──────────────────────────────────
+      - name: Update README table (auto mark ✅/⏰)
         uses: actions/github-script@v7
         env:
           README_PATH: ${{ env.README_PATH }}
+          START_DATE: ${{ env.START_DATE }}
+          END_DATE: ${{ env.END_DATE }}
         with:
           script: |
-            const fs = require('fs'), core = require('@actions/core');
+            const fs = require('fs');   // core, github, context는 github-script가 전역 제공
+            const { execSync } = require('child_process');
             const path = process.env.README_PATH;
+
+            // 0) 파일/마커 확인
             if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
             let md = fs.readFileSync(path, 'utf8');
-            if (!md.includes('<!-- PROGRESS:START -->')) { core.warning('Skip: markers missing'); return; }
-            // TODO: 여기서 ✅/⏰ 갱신. 일단 파일은 그대로 둡니다.
+            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
+            const si=md.indexOf(S), ei=md.indexOf(E);
+            if (si<0 || ei<0) { core.warning(`Skip: progress markers missing in ${path}`); return; }
 
-      # feature/* 에서는 현재 브랜치에만 커밋
+            // 1) 변경 파일 수집: payload 우선, 비면 git diff 폴백
+            const commits = Array.isArray(context.payload.commits) ? context.payload.commits : [];
+            const changedPaths = [];
+            for (const c of commits) {
+              const add = Array.isArray(c.added)    ? c.added    : [];
+              const mod = Array.isArray(c.modified) ? c.modified : [];
+              const del = Array.isArray(c.removed)  ? c.removed  : [];
+              for (const p of [...add, ...mod, ...del]) changedPaths.push(p);
+            }
+            if (changedPaths.length === 0) {
+              try {
+                const out = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
+                out.split('\n').filter(Boolean).forEach(p => changedPaths.push(p));
+                core.info('Used git diff fallback for changed paths.');
+              } catch (e) {
+                core.warning('git diff fallback failed: ' + e.message);  // ← warning 철자 고침
+              }
+            }
+
+            // 1-1) solutions/YYYY/MM/DD/ 날짜 뽑기
+            const dateSet = new Set();
+            const re = /(?:^|\/)solutions\/(\d{4})\/(\d{2})\/(\d{2})\//;
+            for (const f of changedPaths) {
+              const m = typeof f === 'string' ? f.match(re) : null;
+              if (m) dateSet.add(`${m[1]}-${m[2]}-${m[3]}`);
+            }
+            if (dateSet.size === 0) { core.info('No solution-date found in changed paths. Skip.'); return; }
+
+            // 2) 오늘/어제(KST)
+            const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+            const z = n => String(n).padStart(2,'0');
+            const today = `${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
+            const yObj = new Date(nowKST); yObj.setDate(yObj.getDate()-1);
+            const yesterday = `${yObj.getFullYear()}-${z(yObj.getMonth()+1)}-${z(yObj.getDate())}`;
+            const hour = nowKST.getHours();
+
+            // 3) 표 블록만 수정
+            const before = md.slice(0, si + S.length);
+            const block  = md.slice(si + S.length, ei);
+            const after  = md.slice(ei);
+
+            let changedFlag = false;
+            const linesUpd = block.split('\n').map(line => {
+              const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
+              if (!m) return line;
+              const [, date, statusRaw, rest] = m;
+              const status = statusRaw.trim();
+
+              if (!dateSet.has(date)) return line;
+
+              let mark = null;
+              if (date === today) mark = '✅';
+              else if (date === yesterday && hour < 6) mark = '⏰';
+
+              if (!mark) return line;
+              if (status === '' || status === '⬜') {
+                changedFlag = true;
+                return `| ${date} | ${mark} | ${rest} |`;
+              }
+              return line;
+            });
+
+            if (!changedFlag) { core.info('No table changes needed.'); return; }
+
+            const out = before + '\n' + linesUpd.join('\n').replace(/^\n+/, '') + after;
+            fs.writeFileSync(path, out, 'utf8');
+            core.info(`Updated ${path} for dates: ${[...dateSet].join(', ')}`);
+
+      # feature/* 에서는 현재 브랜치에 커밋
       - name: Commit to feature branch
         if: startsWith(github.ref_name, 'feature/')
         run: |
@@ -67,7 +155,7 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: mark daily status"
           git push origin HEAD:${{ github.ref_name }}
 
-      # develop 에서는 PR로만
+      # develop 에서는 PR만
       - name: Create PR to develop
         if: github.ref_name == 'develop'
         uses: peter-evans/create-pull-request@v6

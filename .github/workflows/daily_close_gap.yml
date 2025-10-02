@@ -1,4 +1,5 @@
 name: Daily Close (mark ❌ for missing)
+
 on:
   schedule:
     - cron: '5 15 * * *'   # 매일 00:05 KST
@@ -14,39 +15,53 @@ jobs:
     env:
       TZ: Asia/Seoul
       START_DATE: '2025-10-02'
-      END_DATE:   '2025-11-21'
+      END_DATE: '2025-11-21'
       README_PATH: 01_cert_week_7/README.md
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout develop
+        uses: actions/checkout@v4
         with:
           ref: refs/heads/develop
 
-      # ⬜ → ❌ 로직 (위 스텝 그대로)
       - name: Mark ❌ for yesterday if empty
         uses: actions/github-script@v7
         env:
-          README_PATH: 01_cert_week_7/README.md
+          README_PATH: ${{ env.README_PATH }}
         with:
           script: |
-            const fs = require('fs');
-            function kstNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
-            function ymd(d){ const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
-            const y=kstNow(); y.setDate(y.getDate()-1); const target=ymd(y);
-            const path=process.env.README_PATH; core.info(`Target date (KST-1d): ${target}`);
-            let md=fs.readFileSync(path,'utf8'); const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
-            const si=md.indexOf(S), ei=md.indexOf(E); if(si<0||ei<0){ core.setFailed(`Progress markers not found in ${path}`); return; }
-            const before=md.slice(0,si+S.length), block=md.slice(si+S.length,ei), after=md.slice(ei);
-            const lines=block.split('\n'); let changed=false;
-            const updated=lines.map(line=>{
+            const fs = require('fs');  // core는 전역 제공
+            const path = process.env.README_PATH;
+
+            if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
+            let md = fs.readFileSync(path,'utf8');
+            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
+            const si=md.indexOf(S), ei=md.indexOf(E);
+            if (si<0 || ei<0) { core.warning(`Skip: progress markers not found in ${path}`); return; }
+
+            // 어제 날짜(KST)
+            const nowKST = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+            nowKST.setDate(nowKST.getDate()-1);
+            const z=n=>String(n).padStart(2,'0');
+            const target=`${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
+            core.info(`Target date (KST-1d): ${target}`);
+
+            const before=md.slice(0, si+S.length), block=md.slice(si+S.length, ei), after=md.slice(ei);
+            let changed=false;
+            const updated = block.split('\n').map(line=>{
               const m=line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-              if(!m) return line; const [,date,statusRaw,rest]=m; if(date!==target) return line;
-              const status=statusRaw.trim(); if(status===''||status==='⬜'){ changed=true; return `| ${date} | ❌ | ${rest} |`; }
+              if(!m) return line;
+              const [,date,statusRaw,rest]=m;
+              if(date!==target) return line;
+              const s=statusRaw.trim();
+              if(s===''||s==='⬜'){ changed=true; return `| ${date} | ❌ | ${rest} |`; }
               return line;
             });
-            if(!changed){ core.info(`No change needed for ${target}.`); return; }
-            const result=before+'\n'+updated.join('\n').replace(/^\n+/,'')+after; fs.writeFileSync(path,result,'utf8');
-            core.info(`Marked ${target} as ❌ in ${path}`);
 
+            if(!changed){ core.info(`No change needed for ${target}`); return; }
+            const out = before+'\n'+updated.join('\n').replace(/^\n+/,'')+after;
+            fs.writeFileSync(path, out, 'utf8');
+            core.info(`Marked ${target} as ❌`);
+      
       - name: PR to develop
         uses: peter-evans/create-pull-request@v6
         with:
@@ -55,4 +70,4 @@ jobs:
           title: "chore: daily close (mark ❌)"
           commit-message: "chore: daily close (mark ❌)"
           add-paths: |
-            01_cert_week_7/README.md
+            ${{ env.README_PATH }}
