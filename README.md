@@ -19,7 +19,7 @@ GitHub 업로드: Week_1/problemX.py, Week_1/problemY.sql
 
 오답노트: Week_1/review.md
 
-✅ 주차별 흐름 (요약)
+### ✅ 주차별 흐름 (요약)
 
 Week 2 (10/10 ~ 10/16): PCCP 기초+PCSQL 심화
 
