@@ -12,6 +12,8 @@
 
 ### ✅ Week 1 (10/3 ~ 10/9)
 
+GitHub Actions + 스크립트로 README 자동 수정 커밋 (깃허브 액션 연습)
+
 PCCP Lv.1 Python: 조건문/반복문/리스트/문자열 (매일 1문제)
 
 PCSQL: SELECT, WHERE, JOIN 기초 (주 3일)

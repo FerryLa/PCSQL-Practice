@@ -18,7 +18,19 @@
 
 ---
 
+## 🧑‍💻 참고할 만한 문제 소스 by [SKT FLY AI 6기 PCSQL 부수기](https://github.com/Hyubbbb/FLY_PCSQL?tab=readme-ov-file)
+[Programmers 공식 샘플 문제](https://certi.programmers.co.kr/about/sample)  
+[Programmers SQL 고득점 Kit](https://school.programmers.co.kr/learn/challenges?tab=sql_practice_kit)  
+[HackerRank](https://www.hackerrank.com/domains/sql?ref=blog.selectfromuser.com)  
+[SolveSQL](https://solvesql.com/?ref=blog.selectfromuser.com)  
+[LeetCode](https://leetcode.com/studyplan/top-sql-50/)
+
+---
+
 ## 🎯 시험 일정
+[프로그래머스 인증시험 사이트](https://certi.programmers.co.kr/tryouts) 
+
+[데이터자격검정 시험 일정](https://www.dataq.or.kr/www/accept/schedule.do)
 
 - 10월 23일: PCSQL 시험
 - 11월 2일: ADsP 시험
@@ -29,12 +41,6 @@
 
 ## 📅 Weekly Checklist
 
-### Week 0 (10/02)
-
-- [x] GitHub 레포 세팅 (README 작성, Week_0 폴더 생성)
-- [x] 루틴 확정 및 첫 커밋
-
----
 
 ### Week 1 (10/03 ~ 10/09)
 
@@ -95,3 +101,14 @@
 - [ ] 11/16: 🏆 **SQLD 시험**
 - [ ] 11/18: 미니프로젝트 테스트 & GitHub 정리
 - [ ] 11월 4째주: 🏆 **PCSQL 시험**
+
+---
+
+## ✅ Daily Progress (Auto)
+
+<!-- PROGRESS:START -->
+| Date | Status | Note |
+|------|--------|------|
+| 2024-10-03 | ⬜ |  |
+<!-- PROGRESS:END -->
+
