@@ -1,8 +1,9 @@
+# .github/workflows/daily_close_gap.yml
 name: Daily Close (mark ❌ for missing)
 
 on:
   schedule:
-    - cron: '5 15 * * *'   # 매일 00:05 KST
+    - cron: '5 15 * * *'   # 매일 00:05 KST (UTC+9 → 15:05 UTC)
   workflow_dispatch:
 
 permissions:
@@ -14,63 +15,84 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
-      START_DATE: '2025-10-02'
-      END_DATE: '2025-11-21'
+      # 리드미 경로(프로젝트에 맞게 이미 사용 중인 경로를 유지하세요)
       README_PATH: 01_cert_week_7/README.md
     steps:
+      # develop의 최신 스냅샷을 체크아웃
       - name: Checkout develop
         uses: actions/checkout@v4
         with:
           ref: refs/heads/develop
 
+      # 어제 날짜 행이 비었거나(빈/⬜/🟪) 없으면 ❌로 기록
       - name: Mark ❌ for yesterday if empty
         uses: actions/github-script@v7
         env:
-          README_PATH: 01_cert_week_7/README.md
+          README_PATH: ${{ env.README_PATH }}
         with:
           script: |
-            const fs = require('fs');
-            const path=process.env.README_PATH;
-            if (!fs.existsSync(path)) { core.setFailed(`README not found: ${path}`); return; }
-            let md = fs.readFileSync(path,'utf8');
+            const fs = require('fs');  // core, github, context 전역 제공
+            const path = process.env.README_PATH;
+
+            // 0) 파일/마커 확인
+            if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
+            let md = fs.readFileSync(path, 'utf8');
             const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
             const si=md.indexOf(S), ei=md.indexOf(E);
-            if (si<0||ei<0){ core.setFailed('Markers missing'); return; }
+            if (si<0 || ei<0) { core.warning(`Skip: progress markers missing in ${path}`); return; }
 
-            const before=md.slice(0,si+S.length), after=md.slice(ei);
-            const lines=md.slice(si+S.length,ei).split('\n');
+            // 1) 어제(KST) 계산
+            const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+            const z = n => String(n).padStart(2, '0');
+            const yObj = new Date(nowKST); yObj.setDate(yObj.getDate()-1);
+            const ymd = `${yObj.getFullYear()}-${z(yObj.getMonth()+1)}-${z(yObj.getDate())}`;
 
+            // 2) 블록만 수정
+            const before = md.slice(0, si + S.length);
+            let   block  = md.slice(si + S.length, ei);
+            const after  = md.slice(ei);
+
+            const lines = block.split('\n');
             const isEmpty = s => ['','⬜','🟪'].includes(String(s).trim());
 
-            const nowKST = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-            nowKST.setDate(nowKST.getDate()-1); // 어제
-            const z=n=>String(n).padStart(2,'0');
-            const date=`${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
+            // 표의 행 인덱스 맵(date → index)
+            const rowIdx = new Map();
+            lines.forEach((line, i) => {
+              const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
+              if (m) rowIdx.set(m[1], i);
+            });
 
-            let idx = -1;
-            for (let i=0;i<lines.length;i++){
+            let changed = false;
+
+            if (rowIdx.has(ymd)) {
+              // 기존 행이 있으면 상태가 비었을 때만 ❌로 변경
+              const i = rowIdx.get(ymd);
               const m = lines[i].match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-              if (m && m[1]===date){ idx=i; break; }
-            }
-
-            if (idx>=0){
-              const m = lines[idx].match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-              const status=m[2], rest=m[3];
-              if (isEmpty(status)) lines[idx]=`| ${date} | ❌ | ${rest} |`; else { core.info('Already marked.'); return; }
+              if (!m) { core.info('Row parse failed. Skip.'); return; }
+              const status = m[2];
+              const rest   = m[3];
+              if (isEmpty(status)) {
+                lines[i] = `| ${ymd} | ❌ | ${rest} |`;
+                changed = true;
+              }
             } else {
-              // 헤더 아래 새 행 추가
+              // 어제 행이 없으면 헤더 바로 아래에 새 행 추가
               let insertAt = 0;
               for (let i=0;i<lines.length;i++){
                 if (/^\s*\|\s*Date\s*\|\s*Status\s*\|\s*Note/.test(lines[i])) { insertAt = i+1; break; }
               }
-              lines.splice(insertAt, 0, `| ${date} | ❌ | |`);
+              lines.splice(insertAt, 0, `| ${ymd} | ❌ | |`);
+              changed = true;
             }
 
-            const out = before+'\n'+lines.join('\n').replace(/^\n+/, '')+after;
-            fs.writeFileSync(path,out,'utf8');
-            core.info(`Closed ${date} with ❌`);
-      
+            if (!changed) { core.info('No daily-close change needed.'); return; }
 
+            block = lines.join('\n');
+            const out = before + '\n' + block.replace(/^\n+/, '') + after;
+            fs.writeFileSync(path, out, 'utf8');
+            core.info(`Daily-close marked ❌ for ${ymd}`);
+
+      # 변경사항을 PR로 올린다(보호 브랜치에 직접 푸시 금지 가정)
       - name: PR to develop
         uses: peter-evans/create-pull-request@v6
         with:
