@@ -152,7 +152,7 @@ jobs:
                 const i = rowIdx.get(date);
                 const m = lines[i].match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
                 const status = m[2];
-                const rest   = m[3];
+                const rest   = (m[3] || '').replace(/\|+\s*$/, '').trim();
                 if (isEmpty(status)) {
                   lines[i] = `| ${date} | ${mark} | ${rest} |`;
                   changed = true;
