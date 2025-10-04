@@ -5,8 +5,7 @@ on:
     branches: ['feature/**', 'develop']
     paths:
       - '**/solutions/**'
-      - '.github/workflows/push_update_status.yml'
-
+      - '.github/workflows/push_update_status.yml'   # 워크플로 수정 테스트 용(원치 않으면 지워도 됨)
 
 permissions:
   contents: write
@@ -17,66 +16,44 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
-      START_DATE: '2025-10-02'
-      END_DATE:   '2025-11-21'
       README_PATH: 01_cert_week_7/README.md
-
     steps:
-      # HEAD~1과 비교하려면 최소 2개 커밋을 가져와야 한다
+      # HEAD~1과 비교하려면 최소 2개 커밋이 필요
       - name: Checkout current ref
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          fetch-depth: 2   # (있으면 git diff fallback이 잘 동작)
+          fetch-depth: 2
 
-
-      # ── 디버그 1: 컨텍스트 ───────────────────────────────────────────
-      - name: Debug context
-        run: |
-          echo "branch=${GITHUB_REF_NAME}"
-          echo "repo=${GITHUB_REPOSITORY}"
-          echo "readme=${README_PATH}"
-          if [ -f "${README_PATH}" ]; then
-            echo "README exists ✅"
-          else
-            echo "README missing ❌"
-            exit 0
-          fi
-
-      # ── 디버그 2: 마커 존재 확인 ─────────────────────────────────────
-      - name: Check progress markers
-        run: |
-          if grep -q "<!-- PROGRESS:START -->" "${README_PATH}"; then
-            echo "Markers found."
-          else
-            echo "No markers. Skip."
-            exit 0
-          fi
-
-      # ── 디버그 3: 변경 파일 목록 ─────────────────────────────────────
-      - name: Show changed files in push
-        run: |
-          git diff --name-only HEAD~1 HEAD || true
-
-      # ── 실제 갱신 로직 (✅/⏰ 자동 반영) ──────────────────────────────────
-      - name: Update README table (auto mark ✅/⏰)
+      # 표 갱신
+      - name: Update README table (✅/⏰ auto mark)
         uses: actions/github-script@v7
         env:
-          README_PATH: ${{ env.README_PATH }}   # 예: 01_cert_week_7/README.md
+          README_PATH: ${{ env.README_PATH }}
         with:
           script: |
-            const fs = require('fs');  // core, github, context 전역 제공
+            const fs = require('fs');
             const path = process.env.README_PATH;
 
-            // 0) 파일/마커 확인
             if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
-            let md = fs.readFileSync(path, 'utf8');
-            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
-            const si=md.indexOf(S), ei=md.indexOf(E);
-            if (si<0 || ei<0) { core.warning(`Skip: markers missing`); return; }
 
-            // ───────────────────────────────────────────────────────────────
-            // 1) 변경된 경로에서 날짜 뽑기 (+ git diff fallback)
+            let md = fs.readFileSync(path, 'utf8');
+            const S = '<!-- PROGRESS:START -->';
+            const E = '<!-- PROGRESS:END -->';
+            const si = md.indexOf(S), ei = md.indexOf(E);
+            if (si < 0 || ei < 0) { core.warning('Skip: markers missing'); return; }
+
+            // 블록 추출 (마커 사이)
+            const before = md.slice(0, si + S.length);
+            let   block  = md.slice(si + S.length, ei);
+            const after  = md.slice(ei);
+
+            // 기존 행만 뽑기(헤더/구분선 제거)
+            const rawLines = block.split('\n')
+              .map(s => s.trim())
+              .filter(s => s && !/^(\| *Date *\| *Status *\| *Note *\|?)$/.test(s) && !/^(\|-{2,}\|[-| ]*?)$/.test(s));
+
+            // 변경 파일에서 날짜 찾기 + git diff fallback
             const commits = Array.isArray(context.payload.commits) ? context.payload.commits : [];
             const changedPaths = [];
             for (const c of commits) {
@@ -84,8 +61,8 @@ jobs:
               for (const p of [...add, ...mod, ...rem]) changedPaths.push(p);
             }
             if (changedPaths.length === 0) {
-              const { execSync } = require('child_process');
               try {
+                const { execSync } = require('child_process');
                 const out = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
                 out.split('\n').filter(Boolean).forEach(p => changedPaths.push(p));
                 core.info('Used git diff fallback for changed paths.');
@@ -98,21 +75,16 @@ jobs:
               if (m) dateSet.add(`${m[1]}-${m[2]}-${m[3]}`);
             }
 
-            // ───────────────────────────────────────────────────────────────
-            // 1-보강) 오늘/어제 폴더가 실제로 있으면 날짜에 강제로 추가
+            // 오늘/어제 폴더가 실제 있으면 후보에 추가(푸시 없이 수동 파일 추가/이동 대비)
             const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
             const z = n => String(n).padStart(2,'0');
             const today = `${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
             const yObj = new Date(nowKST); yObj.setDate(yObj.getDate()-1);
             const yesterday = `${yObj.getFullYear()}-${z(yObj.getMonth()+1)}-${z(yObj.getDate())}`;
 
-            // README 경로에서 루트 추정: "…/README.md" ⇒ 앞 디렉터리 + "/solutions"
             const rootDir = path.replace(/\/README\.md$/, '');
             const solRoot = `${rootDir}/solutions`;
-            function dirFor(yyyy_mm_dd) {
-              const [Y,M,D] = yyyy_mm_dd.split('-');
-              return `${solRoot}/${Y}/${M}/${D}`;
-            }
+            const dirFor = (d) => { const [Y,M,D] = d.split('-'); return `${solRoot}/${Y}/${M}/${D}`; };
             try {
               if (!dateSet.size) {
                 if (fs.existsSync(dirFor(today)))     dateSet.add(today);
@@ -120,11 +92,9 @@ jobs:
               }
             } catch {}
 
-            // date 후보가 여전히 없으면 종료
             if (dateSet.size === 0) { core.info('No solution-date found. Skip.'); return; }
 
-            // ───────────────────────────────────────────────────────────────
-            // 2) 마크 계산(오늘=✅, 새벽 0~5시의 어제=⏰)
+            // 마킹 규칙
             const hour = nowKST.getHours();
             const isEmpty = s => ['','⬜','🟪'].includes(String(s).trim());
             const wantMark = (date) => {
@@ -133,18 +103,14 @@ jobs:
               return null;
             };
 
-            // 3) 블록만 수정 (없으면 행 추가)
-            const before = md.slice(0, si + S.length);
-            let   block  = md.slice(si + S.length, ei);
-            const after  = md.slice(ei);
-
-            const lines = block.split('\n');
-            const rowIdx = new Map(); // date -> index
-            lines.forEach((line, i) => {
+            // 기존 행 인덱스 맵(date -> idx)
+            const rowIdx = new Map();
+            rawLines.forEach((line, i) => {
               const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
               if (m) rowIdx.set(m[1], i);
             });
 
+            let lines = [...rawLines];
             let changed = false;
 
             for (const date of dateSet) {
@@ -154,34 +120,30 @@ jobs:
               if (rowIdx.has(date)) {
                 const i = rowIdx.get(date);
                 const m = lines[i].match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-                const status = m[2];
-                const rest   = m[3];
+                const status = m ? m[2] : '';
+                const rest   = m ? (m[3] || '').replace(/\|+\s*$/, '').trim() : '';
                 if (isEmpty(status)) {
                   lines[i] = `| ${date} | ${mark} | ${rest} |`;
                   changed = true;
                 }
               } else {
-                // 헤더 바로 아래 삽입
-                let insertAt = 0;
-                for (let i=0;i<lines.length;i++){
-                  if (/^\s*\|\s*Date\s*\|\s*Status\s*\|\s*Note/.test(lines[i])) { insertAt = i+1; break; }
-                }
-                const newRow = `| ${date} | ${mark} | |`;
-                lines.splice(insertAt, 0, newRow);
+                // 새 날짜는 최상단에 삽입(최근일이 위쪽)
+                lines.unshift(`| ${date} | ${mark} | |`);
                 changed = true;
               }
             }
 
             if (!changed) { core.info('No table changes needed.'); return; }
-            block = lines.join('\n');
-            const out = before + '\n' + block.replace(/^\n+/, '') + after;
+
+            // 표는 항상 마커 블록 안에 "헤더 + 구분선 + 데이터"를 통째로 쓴다
+            const header = '| Date       | Status | Note |\n|------------|--------|------|';
+            block = '\n' + header + '\n' + lines.join('\n') + '\n';
+
+            const out = before + block + after;
             fs.writeFileSync(path, out, 'utf8');
             core.info(`Updated ${path} for dates: ${[...dateSet].join(', ')}`);
-      
-      
-      
 
-      # feature/* 에서는 현재 브랜치에 커밋
+      # feature/* 에서는 현재 브랜치로 커밋
       - name: Commit to feature branch
         if: startsWith(github.ref_name, 'feature/')
         run: |
@@ -191,7 +153,7 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: mark daily status"
           git push origin HEAD:${{ github.ref_name }}
 
-      # develop 에서는 PR만
+      # develop 에서는 PR만 생성(보호 브랜치 준수)
       - name: Create PR to develop
         if: github.ref_name == 'develop'
         uses: peter-evans/create-pull-request@v6
