@@ -1,0 +1,120 @@
+
+USE w3db;
+
+DROP TABLE IF EXISTS Customers;
+
+CREATE TABLE Customers (
+                           CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+                           CustomerName VARCHAR(100),
+                           ContactName VARCHAR(100),
+                           Address VARCHAR(100),
+                           City VARCHAR(50),
+                           PostalCode VARCHAR(20),
+                           Country VARCHAR(50)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 예제 문제에 자주 쓰이는 대표 데이터 세트
+INSERT INTO Customers (CustomerID, CustomerName, ContactName, Address, City, PostalCode, Country) VALUES
+                                                                                                      (1, 'Alfreds Futterkiste', 'Maria Anders', 'Obere Str. 57', 'Berlin', '12209', 'Germany'),
+                                                                                                      (2, 'Ana Trujillo Emparedados y helados', 'Ana Trujillo', 'Avda. de la Constitución 2222', 'México D.F.', '05021', 'Mexico'),
+                                                                                                      (3, 'Antonio Moreno Taquería', 'Antonio Moreno', 'Mataderos 2312', 'México D.F.', '05023', 'Mexico'),
+                                                                                                      (4, 'Around the Horn', 'Thomas Hardy', '120 Hanover Sq.', 'London', 'WA1 1DP', 'UK'),
+                                                                                                      (5, 'Berglunds snabbköp', 'Christina Berglund', 'Berguvsvägen 8', 'Luleå', 'S-958 22', 'Sweden'),
+                                                                                                      (6, 'Blauer See Delikatessen', 'Hanna Moos', 'Forsterstr. 57', 'Mannheim', '68306', 'Germany'),
+                                                                                                      (7, 'Blondel père et fils', 'Frédérique Citeaux', '24, place Kléber', 'Strasbourg', '67000', 'France'),
+                                                                                                      (8, 'Bólido Comidas preparadas', 'Martín Sommer', 'C/ Araquil, 67', 'Madrid', '28023', 'Spain'),
+                                                                                                      (9, 'Bon app''', 'Laurence Lebihan', '12, rue des Bouchers', 'Marseille', '13008', 'France'),
+                                                                                                      (10, 'Centro comercial Moctezuma', 'Francisco Chang', 'Sierras de Granada 9993', 'México D.F.', '05022', 'Mexico'),
+                                                                                                      (11, 'Chop-suey Chinese', 'Yang Wang', 'Hauptstr. 29', 'Bern', '3012', 'Switzerland'),
+                                                                                                      (12, 'Comércio Mineiro', 'Pedro Afonso', 'Av. dos Lusíadas, 23', 'São Paulo', '05432-043', 'Brazil'),
+                                                                                                      (13, 'Consolidated Holdings', 'Elizabeth Brown', 'Berkeley Gardens 12 Brewery', 'London', 'WX1 6LT', 'UK'),
+                                                                                                      (14, 'Ernst Handel', 'Roland Mendel', 'Kirchgasse 6', 'Graz', '8010', 'Austria'),
+                                                                                                      (15, 'FISSA Fabrica Inter. Salchichas S.A.', 'Diego Roel', 'C/ Moralzarzal, 86', 'Madrid', '28034', 'Spain'),
+                                                                                                      (16, 'Folies gourmandes', 'Martine Rancé', '184, chaussée de Tournai', 'Lille', '59000', 'France'),
+                                                                                                      (17, 'Folk och fä HB', 'Maria Larsson', 'Åkergatan 24', 'Bräcke', 'S-844 67', 'Sweden'),
+                                                                                                      (18, 'Frankenversand', 'Peter Franken', 'Berliner Platz 43', 'München', '80805', 'Germany'),
+                                                                                                      (19, 'France restauration', 'Carine Schmitt', '54, rue Royale', 'Nantes', '44000', 'France'),
+                                                                                                      (20, 'Galería del gastrónomo', 'Eduardo Saavedra', 'Rambla de Cataluña, 23', 'Barcelona', '08022', 'Spain'),
+                                                                                                      (21, 'Gods Own Sandwiches', 'Sandie Clement', 'Granville House', 'London', 'SW1 1AA', 'UK'),
+                                                                                                      (22, 'Godos Cocina Típica', 'José Pedro Freyre', 'C/ Romero, 33', 'Sevilla', '41101', 'Spain'),
+                                                                                                      (23, 'Hanari Carnes', 'Mario Pontes', 'Rua do Paço, 67', 'Rio de Janeiro', '05454-876', 'Brazil'),
+                                                                                                      (24, 'Island Trading', 'Helen Bennett', 'Garden House Crowther Way', 'Cowes', 'PO31 7PJ', 'UK'),
+                                                                                                      (25, 'Königlich Essen', 'Philip Cramer', 'Maubelstr. 90', 'Brandenburg', '14776', 'Germany'),
+                                                                                                      (26, 'Laughing Bacchus Winecellars', 'Yoshi Tannamuri', '1900 Oak St.', 'Vancouver', 'V3F 2K1', 'Canada'),
+                                                                                                      (27, 'Lehmanns Marktstand', 'Renate Messner', 'Magazinweg 7', 'Frankfurt a.M.', '60528', 'Germany'),
+                                                                                                      (28, 'Let''s Stop N Shop', 'Jaime Yorres', '87 Polk St. Suite 5', 'San Francisco', '94117', 'USA'),
+                                                                                                      (29, 'Magazzini Alimentari Riuniti', 'Giovanni Rovelli', 'Via Ludovico il Moro 22', 'Bergamo', '24100', 'Italy'),
+                                                                                                      (30, 'Maison Dewey', 'Catherine Dewey', 'Rue Joseph-Bens 532', 'Bruxelles', 'B-1180', 'Belgium'),
+                                                                                                      (31, 'Morgenstern Gesundkost', 'Alexander Feuer', 'Heerstr. 22', 'Leipzig', '04179', 'Germany'),
+                                                                                                      (32, 'North/South', 'Simon Crowther', 'South House 300 Queensbridge', 'London', 'SW7 1RZ', 'UK'),
+                                                                                                      (33, 'Paris spécialités', 'Marie Bertrand', '265, boulevard Charonne', 'Paris', '75012', 'France'),
+                                                                                                      (34, 'Pericles Comidas clásicas', 'Guillermo Fernández', 'Calle Dr. Jorge Cash 321', 'México D.F.', '05033', 'Mexico'),
+                                                                                                      (35, 'Queen Cozinha', 'Lúcia Carvalho', 'Alameda dos Canàrios, 891', 'São Paulo', '05487-020', 'Brazil'),
+                                                                                                      (36, 'Quick-Stop', 'Horst Kloss', 'Taucherstraße 10', 'Cunewalde', '01307', 'Germany'),
+                                                                                                      (37, 'Rancho grande', 'Sergio Gutiérrez', 'Av. del Libertador 900', 'Buenos Aires', '1010', 'Argentina'),
+                                                                                                      (38, 'Rattlesnake Canyon Grocery', 'Paula Wilson', '2817 Milton Dr.', 'Albuquerque', '87110', 'USA'),
+                                                                                                      (39, 'Romero y tomillo', 'Alejandra Camino', 'Gran Vía, 1', 'Madrid', '28001', 'Spain'),
+                                                                                                      (40, 'Save-a-lot Markets', 'Jose Pavarotti', '187 Suffolk Ln.', 'Boise', '83720', 'USA'),
+                                                                                                      (41, 'Simons bistro', 'Jytte Petersen', 'Vinbæltet 34', 'København', '1734', 'Denmark'),
+                                                                                                      (42, 'Spécialités du monde', 'Dominique Perrier', '25, rue Lauriston', 'Paris', '75016', 'France'),
+                                                                                                      (43, 'Toms Spezialitäten', 'Karin Josephs', 'Luisenstr. 48', 'Münster', '44087', 'Germany'),
+                                                                                                      (44, 'Tortuga Restaurante', 'Miguel Angel Paolino', 'Avda. Azteca 123', 'México D.F.', '05034', 'Mexico'),
+                                                                                                      (45, 'Tradição Hipermercados', 'Anabela Domingues', 'Av. Inês de Castro, 414', 'São Paulo', '05634-030', 'Brazil'),
+                                                                                                      (46, 'Vaffeljernet', 'Palle Ibsen', 'Smagsløget 45', 'Århus', '8200', 'Denmark'),
+                                                                                                      (47, 'Victuailles en stock', 'Mary Saveley', '2, rue du Commerce', 'Lyon', '69004', 'France'),
+                                                                                                      (48, 'Wartian Herkku', 'Pirkko Koskitalo', 'Torikatu 38', 'Oulu', '90110', 'Finland'),
+                                                                                                      (49, 'Wilman Kala', 'Matti Karttunen', 'Keskuskatu 45', 'Helsinki', '21240', 'Finland'),
+                                                                                                      (50, 'Wolski Zajazd', 'Zbyszek Piestrzeniewicz', 'ul. Filtrowa 68', 'Warszawa', '01-012', 'Poland');
+
+-- Customers 51 ~ 93 추가 레코드
+INSERT INTO Customers (CustomerID, CustomerName, ContactName, Address, City, PostalCode, Country) VALUES
+                                                                                                      (51, 'Aarhus Specialties', 'Niels Henriksen', 'Østergade 12', 'Århus', '8000', 'Denmark'),
+                                                                                                      (52, 'Bresler Breads', 'Samuel Bresler', 'ul. Chmielna 21', 'Kraków', '31-027', 'Poland'),
+                                                                                                      (53, 'Cactus Comidas para llevar', 'Patricio Simpson', 'Cerrito 333', 'Buenos Aires', '1012', 'Argentina'),
+                                                                                                      (54, 'Delikatessen Karl Jablonski', 'Karl Jablonski', 'Moltkestraße 30', 'Köln', '50733', 'Germany'),
+                                                                                                      (55, 'Eastern Connection', 'Ann Devon', '35 King George', 'London', 'E1 7AA', 'UK'),
+                                                                                                      (56, 'Familia Arquibaldo', 'Arnaldo J. Ros', 'Rua Orós, 92', 'São Paulo', '05442-030', 'Brazil'),
+                                                                                                      (57, 'Gourmet Lanchonetes', 'André Fonseca', 'Av. Brasil, 442', 'Campinas', '13010-000', 'Brazil'),
+                                                                                                      (58, 'HILARION-Abastos', 'Carlos Hernández', 'Carrera 22 con Ave. Carlos Soublette', 'San Cristóbal', '5001', 'Venezuela'),
+                                                                                                      (59, 'Inaba Shokuhin', 'Yoshi Nagase', '1-1-2 Umeda', 'Osaka', '530-0001', 'Japan'),
+                                                                                                      (60, 'Jardín de Flores', 'Diego Garrido', 'Calle 5 #45', 'Bogotá', '110111', 'Colombia'),
+                                                                                                      (61, 'Kaffeehaus Pecher', 'Manfred Pecher', 'Graben 12', 'Wien', '1010', 'Austria'),
+                                                                                                      (62, 'La corne d''abondance', 'Daniel Tonini', '67, avenue de l''Europe', 'Versailles', '78000', 'France'),
+                                                                                                      (63, 'Maison d''Asie', 'Thierry Roche', '14 rue des Lilas', 'Lyon', '69008', 'France'),
+                                                                                                      (64, 'Norske Meierier', 'Lars Johansen', 'Storgata 4', 'Oslo', '0155', 'Norway'),
+                                                                                                      (65, 'Old World Delicatessen', 'Rene Phillips', '2743 Bering St.', 'Anchorage', '99503', 'USA'),
+                                                                                                      (66, 'Pacific Giftware', 'Yvonne Moncada', 'MW. St 2', 'Auckland', '1010', 'New Zealand'),
+                                                                                                      (67, 'Quick-Stop Berlin', 'Günter Schäfer', 'Friedrichstr. 15', 'Berlin', '10117', 'Germany'),
+                                                                                                      (68, 'Ricardo Adocicados', 'Ricardo Adelino', 'Av. das Américas, 12', 'Rio de Janeiro', '22631-004', 'Brazil'),
+                                                                                                      (69, 'Seven Seas Imports', 'Hari Kumar', '155 Richmond St', 'Vancouver', 'V6B 2M1', 'Canada'),
+                                                                                                      (70, 'Tequila y Limón', 'Rosa Ortega', 'Av. Reforma 123', 'Ciudad de México', '06500', 'Mexico'),
+                                                                                                      (71, 'Urban Outfit Foods', 'Claire Hudson', '72 George St.', 'Edinburgh', 'EH2 3BU', 'UK'),
+                                                                                                      (72, 'Valle del Sol', 'Pablo Serrano', 'Av. Libertad 77', 'Sevilla', '41001', 'Spain'),
+                                                                                                      (73, 'West Coast Trattoria', 'Marco Bellini', 'Via Roma 12', 'Genova', '16121', 'Italy'),
+                                                                                                      (74, 'Yamamoto Ryori', 'Kenji Yamamoto', '2-8-1 Ginza', 'Tokyo', '104-0061', 'Japan'),
+                                                                                                      (75, 'Zurich Spezialitäten', 'Paul Meier', 'Bahnhofstrasse 88', 'Zürich', '8001', 'Switzerland'),
+                                                                                                      (76, 'Arbat Deli', 'Ivan Petrov', 'ul. Arbat 5', 'Moskva', '119019', 'Russia'),
+                                                                                                      (77, 'Blue Mountain Foods', 'Janelle Brown', '12 King St.', 'Kingston', '00010', 'Jamaica'),
+                                                                                                      (78, 'Cantina Hidalgo', 'Luis Hidalgo', 'Calle Hidalgo 77', 'Guadalajara', '44100', 'Mexico'),
+                                                                                                      (79, 'Danube Delights', 'Zoltán Nagy', 'Váci utca 16', 'Budapest', '1052', 'Hungary'),
+                                                                                                      (80, 'Espresso Roma', 'Giorgia Conti', 'Piazza Navona 3', 'Roma', '00186', 'Italy'),
+                                                                                                      (81, 'Fjord Seafood', 'Sigrid Nilsen', 'Bryggen 9', 'Bergen', '5003', 'Norway'),
+                                                                                                      (82, 'Gansu Market', 'Li Wei', 'Tianshui Rd. 88', 'Lanzhou', '730000', 'China'),
+                                                                                                      (83, 'Hansa Handelskontor', 'Uwe Krüger', 'Am Sandtorkai 2', 'Hamburg', '20457', 'Germany'),
+                                                                                                      (84, 'Isla del Encanto', 'Carlos Rivera', 'Calle Fortaleza 25', 'San Juan', '00901', 'Puerto Rico'),
+                                                                                                      (85, 'Jade Garden', 'Mei Lin', 'Nathan Rd 300', 'Hong Kong', '999077', 'Hong Kong'),
+                                                                                                      (86, 'Koala Cuisine', 'Olivia Harris', '12 Pitt St.', 'Sydney', '2000', 'Australia'),
+                                                                                                      (87, 'Lago Azul', 'Mariana Pires', 'Av. Atlântica 500', 'Florianópolis', '88010-400', 'Brazil'),
+                                                                                                      (88, 'Montreal Marché', 'Luc Tremblay', '1200 Rue Sainte-Catherine O', 'Montréal', 'H3B 1K1', 'Canada'),
+                                                                                                      (89, 'Nordic Nosh', 'Mikael Virtanen', 'Esplanadi 5', 'Helsinki', '00130', 'Finland'),
+                                                                                                      (90, 'Oporto Pastéis', 'João Moreira', 'Rua dos Clérigos 15', 'Porto', '4050-205', 'Portugal'),
+                                                                                                      (91, 'Praha Potraviny', 'Karel Dvořák', 'Na Příkopě 10', 'Praha', '11000', 'Czech Republic'),
+                                                                                                      (92, 'Rabat Fine Foods', 'Youssef Amrani', 'Av. Mohammed V 22', 'Rabat', '10000', 'Morocco'),
+                                                                                                      (93, 'Sahara Spices', 'Amira Hassan', 'Sharia Tahrir 12', 'Cairo', '11511', 'Egypt');
+
+-- 총 개수 확인
+SELECT COUNT(*) AS total_customers FROM Customers;
+
+
+-- 5행 확인
+SELECT * FROM Customers LIMIT 5;
