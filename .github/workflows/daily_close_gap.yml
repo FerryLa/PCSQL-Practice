@@ -88,15 +88,15 @@ jobs:
             }
 
       - name: Create PR to develop
-        if: steps.close_mark.outputs.changed == '1'          # ← 변경 없으면 PR 스킵
+        if: steps.close_mark.outputs.changed == '1'
         uses: peter-evans/create-pull-request@v6
         with:
-          base: develop
+          token: ${{ secrets.GITHUB_TOKEN }}         # 명시적으로 지정(권장)
+          base: develop                              # 대상 브랜치
+          branch: automation/daily-close             # 작업 브랜치 prefix
+          branch-suffix: timestamp                   # ← 매 실행마다 유니크 브랜치
+          delete-branch: true                        # 머지 후 정리
           title: "chore: daily close (mark past blanks as ❌)"
           commit-message: "chore: daily close (mark past blanks as ❌)"
           add-paths: |
             ${{ env.README_PATH }}
-          branch: automation/daily-close               # 기본 브랜치명
-          branch-suffix: timestamp                     # ← 접미사로 충돌 회피
-          delete-branch: true                          # 머지 후 청소
-          update-existing-pr: true                     # 기존 PR 있으면 갱신
