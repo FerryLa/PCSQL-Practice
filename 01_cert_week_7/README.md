@@ -106,12 +106,8 @@
 
 ## ✅ Daily Progress (Auto)
 
-| Date       | Status | Note |
-|------------|--------|------| <!-- PROGRESS:START -->
-| 2025-10-04 | ⏰ | |
-| 2025-10-03 | ✅ | |
-| 2025-10-02 | ⏰ | |
-| 2024-10-01 | ⬜ | |
+<!-- PROGRESS:START -->
 <!-- PROGRESS:END -->
+
 
 
