@@ -44,70 +44,63 @@ jobs:
             let   block  = md.slice(si + S.length, ei);
             const after  = md.slice(ei);
 
-            // 블록 안에서 기존 행만 추출(헤더/구분선 제거)
-            let lines = block.split('\n')
-              .map(s => s.trim())
-              .filter(Boolean);
-
-            // 혹시 이전에 헤더가 들어있다면 제거
-            const isHeader = (s) => /^\|\s*Date\s*\|\s*Status\s*\|\s*Note\s*\|?$/.test(s);
-            const isDivider = (s) => /^\|[-\s|]+\|$/.test(s);
+            // 블록 안의 라인 정리
+            let lines = block.split('\n').map(s => s.trim()).filter(Boolean);
+            const isHeader  = s => /^\|\s*Date\s*\|\s*Status\s*\|\s*Note\s*\|?$/.test(s);
+            const isDivider = s => /^\|[-\s|]+\|$/.test(s);
             lines = lines.filter(s => !(isHeader(s) || isDivider(s)));
 
-            // 날짜 파서 (KST 기준)
+            core.startGroup('Parsed table rows');
+            lines.forEach(l => core.info(l));
+            core.endGroup();
+
+            // KST 오늘, 시작일 하한
             const kstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
             const z = n => String(n).padStart(2,'0');
             const todayStr = `${kstNow.getFullYear()}-${z(kstNow.getMonth()+1)}-${z(kstNow.getDate())}`;
-
-            const toDate = (yyyy_mm_dd) => {
-              const [Y,M,D] = yyyy_mm_dd.split('-').map(x => parseInt(x,10));
-              // 현지 시간으로 생성(단순 비교용)
-              return new Date(Y, M-1, D, 0, 0, 0);
-            };
-            const startDateStr = (process.env.START_DATE || '').trim();
-            const hasStartFloor = !!startDateStr;
-            const startFloor = hasStartFloor ? toDate(startDateStr) : null;
+            const toDate = (d) => { const [Y,M,D] = d.split('-').map(n=>+n); return new Date(Y, M-1, D, 0, 0, 0); };
             const today = toDate(todayStr);
 
-            const isEmpty = (s) => {
-              const t = String(s || '').trim();
+            const startDateStr = (process.env.START_DATE || '').trim();
+            const hasFloor = !!startDateStr;
+            const floor = hasFloor ? toDate(startDateStr) : null;
+
+            const isEmpty = s => {
+              const t = String(s||'').trim();
               return t === '' || t === '⬜' || t === '🟪';
             };
 
-            // 각 행 검사: 과거(오늘 이전) + (옵션)시작일 이후 범위에서 빈칸/⬜/🟪 ⇒ ❌
-            let changed = false;
             const rowRe = /^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/;
-
-            const newLines = lines.map(line => {
+            let changed = false;
+            const outLines = lines.map(line => {
               const m = line.match(rowRe);
-              if (!m) return line; // 표 형식 아니면 건드리지 않음
+              if (!m) { core.info(`Skip(non-row): ${line}`); return line; }
               const [, dateStr, statusRaw, restRaw] = m;
-              const rowDate = toDate(dateStr);
-
-              // 미래/오늘은 스킵, 과거만 마감
-              if (!(rowDate < today)) return line;
-              if (hasStartFloor && rowDate < startFloor) return line;
+              const when = toDate(dateStr);
+              if (!(when < today)) { core.info(`Skip(today/future): ${dateStr}`); return line; }
+              if (hasFloor && when < floor) { core.info(`Skip(before floor ${startDateStr}): ${dateStr}`); return line; }
 
               const status = statusRaw.trim();
               const rest = (restRaw || '').replace(/\|+\s*$/, '').trim();
-
               if (isEmpty(status)) {
+                core.info(`MARK ❌: ${dateStr} (was "${status||'empty'}")`);
                 changed = true;
                 return `| ${dateStr} | ❌ | ${rest} |`;
+              } else {
+                core.info(`Keep: ${dateStr} (status "${status}")`);
+                return line;
               }
-              return line;
             });
 
             if (!changed) {
-              core.info('No past blanks to close.'); 
+              core.info('No past blanks to close.');
             } else {
-              // 항상 표 전체(헤더+구분선+데이터)를 마커 블록 안에 통째로 작성
               const header = '| Date       | Status | Note |\n|------------|--------|------|';
-              block = '\n' + header + '\n' + newLines.join('\n') + '\n';
-              const out = before + block + after;
-              fs.writeFileSync(path, out, 'utf8');
+              block = '\n' + header + '\n' + outLines.join('\n') + '\n';
+              fs.writeFileSync(path, before + block + after, 'utf8');
               core.info('Closed past blanks as ❌ (including 🟪).');
             }
+      
 
       - name: Create PR to develop
         if: success()
