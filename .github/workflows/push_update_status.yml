@@ -161,14 +161,19 @@ jobs:
                   changed = true;
                 }
               } else {
-                // 헤더 바로 아래 삽입
-                let insertAt = 0;
-                for (let i=0;i<lines.length;i++){
-                  if (/^\s*\|\s*Date\s*\|\s*Status\s*\|\s*Note/.test(lines[i])) { insertAt = i+1; break; }
-                }
+#                // 헤더 바로 아래 삽입
+#                let insertAt = 0;
+#                for (let i=0;i<lines.length;i++){
+#                  if (/^\s*\|\s*Date\s*\|\s*Status\s*\|\s*Note/.test(lines[i])) { insertAt = i+1; break; }
+#                }
+#                const newRow = `| ${date} | ${mark} | |`;
+#                lines.splice(insertAt, 0, newRow);
+#                changed = true;
+                // (수정) 헤더가 마커 밖이므로, 데이터 블록의 맨 앞에 삽입
                 const newRow = `| ${date} | ${mark} | |`;
-                lines.splice(insertAt, 0, newRow);
+                lines.splice(0, 0, newRow);
                 changed = true;
+            
               }
             }
 
