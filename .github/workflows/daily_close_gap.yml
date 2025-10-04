@@ -1,5 +1,4 @@
-# .github/workflows/daily_close_gap.yml
-name: Daily Close (mark ❌ for missing)
+name: Daily Close (mark all past blanks as ❌)
 
 on:
   schedule:
@@ -15,90 +14,108 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
-      # 리드미 경로(프로젝트에 맞게 이미 사용 중인 경로를 유지하세요)
-      README_PATH: 01_cert_week_7/README.md
+      README_PATH: 01_cert_week_7/README.md   # 너의 README 경로
+      START_DATE: ''                           # 예: '2025-10-01' 넣으면 그 이후만 마감. 비우면 전체 과거
     steps:
-      # develop의 최신 스냅샷을 체크아웃
       - name: Checkout develop
         uses: actions/checkout@v4
         with:
           ref: refs/heads/develop
+          fetch-depth: 2
 
-      # 어제 날짜 행이 비었거나(빈/⬜/🟪) 없으면 ❌로 기록
-      - name: Mark ❌ for yesterday if empty
+      - name: Mark ❌ for all past empty cells (incl. 🟪)
         uses: actions/github-script@v7
         env:
           README_PATH: ${{ env.README_PATH }}
+          START_DATE: ${{ env.START_DATE }}
         with:
           script: |
-            const fs = require('fs');  // core, github, context 전역 제공
+            const fs = require('fs'); // core, github, context 전역 제공
             const path = process.env.README_PATH;
+            if (!fs.existsSync(path)) { core.setFailed(`README not found: ${path}`); return; }
 
-            // 0) 파일/마커 확인
-            if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
             let md = fs.readFileSync(path, 'utf8');
-            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
-            const si=md.indexOf(S), ei=md.indexOf(E);
-            if (si<0 || ei<0) { core.warning(`Skip: progress markers missing in ${path}`); return; }
+            const S = '<!-- PROGRESS:START -->';
+            const E = '<!-- PROGRESS:END -->';
+            const si = md.indexOf(S), ei = md.indexOf(E);
+            if (si < 0 || ei < 0) { core.setFailed('Progress markers not found'); return; }
 
-            // 1) 어제(KST) 계산
-            const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-            const z = n => String(n).padStart(2, '0');
-            const yObj = new Date(nowKST); yObj.setDate(yObj.getDate()-1);
-            const ymd = `${yObj.getFullYear()}-${z(yObj.getMonth()+1)}-${z(yObj.getDate())}`;
-
-            // 2) 블록만 수정
             const before = md.slice(0, si + S.length);
             let   block  = md.slice(si + S.length, ei);
             const after  = md.slice(ei);
 
-            const lines = block.split('\n');
-            const isEmpty = s => ['','⬜','🟪'].includes(String(s).trim());
+            // 블록 안에서 기존 행만 추출(헤더/구분선 제거)
+            let lines = block.split('\n')
+              .map(s => s.trim())
+              .filter(Boolean);
 
-            // 표의 행 인덱스 맵(date → index)
-            const rowIdx = new Map();
-            lines.forEach((line, i) => {
-              const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-              if (m) rowIdx.set(m[1], i);
+            // 혹시 이전에 헤더가 들어있다면 제거
+            const isHeader = (s) => /^\|\s*Date\s*\|\s*Status\s*\|\s*Note\s*\|?$/.test(s);
+            const isDivider = (s) => /^\|[-\s|]+\|$/.test(s);
+            lines = lines.filter(s => !(isHeader(s) || isDivider(s)));
+
+            // 날짜 파서 (KST 기준)
+            const kstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+            const z = n => String(n).padStart(2,'0');
+            const todayStr = `${kstNow.getFullYear()}-${z(kstNow.getMonth()+1)}-${z(kstNow.getDate())}`;
+
+            const toDate = (yyyy_mm_dd) => {
+              const [Y,M,D] = yyyy_mm_dd.split('-').map(x => parseInt(x,10));
+              // 현지 시간으로 생성(단순 비교용)
+              return new Date(Y, M-1, D, 0, 0, 0);
+            };
+            const startDateStr = (process.env.START_DATE || '').trim();
+            const hasStartFloor = !!startDateStr;
+            const startFloor = hasStartFloor ? toDate(startDateStr) : null;
+            const today = toDate(todayStr);
+
+            const isEmpty = (s) => {
+              const t = String(s || '').trim();
+              return t === '' || t === '⬜' || t === '🟪';
+            };
+
+            // 각 행 검사: 과거(오늘 이전) + (옵션)시작일 이후 범위에서 빈칸/⬜/🟪 ⇒ ❌
+            let changed = false;
+            const rowRe = /^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/;
+
+            const newLines = lines.map(line => {
+              const m = line.match(rowRe);
+              if (!m) return line; // 표 형식 아니면 건드리지 않음
+              const [, dateStr, statusRaw, restRaw] = m;
+              const rowDate = toDate(dateStr);
+
+              // 미래/오늘은 스킵, 과거만 마감
+              if (!(rowDate < today)) return line;
+              if (hasStartFloor && rowDate < startFloor) return line;
+
+              const status = statusRaw.trim();
+              const rest = (restRaw || '').replace(/\|+\s*$/, '').trim();
+
+              if (isEmpty(status)) {
+                changed = true;
+                return `| ${dateStr} | ❌ | ${rest} |`;
+              }
+              return line;
             });
 
-            let changed = false;
-
-            if (rowIdx.has(ymd)) {
-              // 기존 행이 있으면 상태가 비었을 때만 ❌로 변경
-              const i = rowIdx.get(ymd);
-              const m = lines[i].match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-              if (!m) { core.info('Row parse failed. Skip.'); return; }
-              const status = m[2];
-              const rest   = m[3];
-              if (isEmpty(status)) {
-                lines[i] = `| ${ymd} | ❌ | ${rest} |`;
-                changed = true;
-              }
+            if (!changed) {
+              core.info('No past blanks to close.'); 
             } else {
-              // 어제 행이 없으면 헤더 바로 아래에 새 행 추가
-              let insertAt = 0;
-              for (let i=0;i<lines.length;i++){
-                if (/^\s*\|\s*Date\s*\|\s*Status\s*\|\s*Note/.test(lines[i])) { insertAt = i+1; break; }
-              }
-              lines.splice(insertAt, 0, `| ${ymd} | ❌ | |`);
-              changed = true;
+              // 항상 표 전체(헤더+구분선+데이터)를 마커 블록 안에 통째로 작성
+              const header = '| Date       | Status | Note |\n|------------|--------|------|';
+              block = '\n' + header + '\n' + newLines.join('\n') + '\n';
+              const out = before + block + after;
+              fs.writeFileSync(path, out, 'utf8');
+              core.info('Closed past blanks as ❌ (including 🟪).');
             }
 
-            if (!changed) { core.info('No daily-close change needed.'); return; }
-
-            block = lines.join('\n');
-            const out = before + '\n' + block.replace(/^\n+/, '') + after;
-            fs.writeFileSync(path, out, 'utf8');
-            core.info(`Daily-close marked ❌ for ${ymd}`);
-
-      # 변경사항을 PR로 올린다(보호 브랜치에 직접 푸시 금지 가정)
-      - name: PR to develop
+      - name: Create PR to develop
+        if: success()
         uses: peter-evans/create-pull-request@v6
         with:
           base: develop
           branch: automation/daily-close
-          title: "chore: daily close (mark ❌)"
-          commit-message: "chore: daily close (mark ❌)"
+          title: "chore: daily close (mark past blanks as ❌)"
+          commit-message: "chore: daily close (mark past blanks as ❌)"
           add-paths: |
             ${{ env.README_PATH }}
