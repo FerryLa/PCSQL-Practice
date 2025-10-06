@@ -19,4 +19,9 @@ if [[ "${DEBUG:-0}" != "0" ]]; then
   echo "[DEBUG] ARGS: $*" >&2
 fi
 
+# 한글 적용
+export PYTHONIOENCODING=UTF-8
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
 exec "$PY" "$@"
