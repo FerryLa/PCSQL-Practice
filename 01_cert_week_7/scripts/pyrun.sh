@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 VENV=".venv"
-if [[ -f "$VENV/bin/activate" ]]; then
-  source "$VENV/bin/activate"
+if [[ -x "$VENV/Scripts/python.exe" ]]; then
+  PY="$VENV/Scripts/python.exe"
+elif [[ -x "$VENV/bin/python" ]]; then
+  PY="$VENV/bin/python"
 else
-  source "$VENV/Scripts/activate"
+  PY="python"
 fi
 
-# 사용: scripts/pyrun.sh solutions/2025/10/05/python/python.py
-python "$@"
+if [[ "${DEBUG:-0}" != "0" ]]; then
+  echo "[DEBUG] ROOT_DIR=$ROOT_DIR" >&2
+  echo "[DEBUG] PY=$PY" >&2
+  echo "[DEBUG] ARGS: $*" >&2
+fi
+
+exec "$PY" "$@"
