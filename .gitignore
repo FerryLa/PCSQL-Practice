@@ -7,3 +7,5 @@ out/
 target/
 # OS
 .DS_Store
+# Python
+.venv/
