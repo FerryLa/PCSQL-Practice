@@ -15,17 +15,19 @@ jobs:
     env:
       TZ: Asia/Seoul
       README_PATH: 01_cert_week_7/README.md
-      START_DATE: ''   # '2025-10-01' 같은 하한선. 비우면 자동 계산
+      # earliest date to backfill, ensures missing dates such as 10/05 are always generated
+      START_DATE: '2025-10-01'
 
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - name: Checkout develop
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: develop
+          # checkout the main branch so updates are applied to the primary branch
+          ref: main
           fetch-depth: 0
 
       # 누락 날짜를 **확실히** 채우는 안전 백필
@@ -184,14 +186,17 @@ jobs:
               core.setOutput('changed', changed ? '1' : '0');
             }
 
-      - name: Create PR to develop
+      - name: Create PR to main
         if: steps.backfill.outputs.changed == '1' || steps.close_mark.outputs.changed == '1'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: develop
+          # open the pull request against the main branch to ensure the README on main is updated
+          base: main
           branch: automation/daily-close
-          # branch-suffix: timestamp   # 쓸데없이 브랜치 안 쌓이게 제거 권장
+          # append a timestamp to each branch name so that new branches don't overwrite old ones
+          branch-suffix: timestamp
+          # automatically delete the source branch once the PR is merged
           delete-branch: true
           title: "chore: daily close (robust backfill & close past blanks)"
           commit-message: "chore: daily close (robust backfill & close past blanks)"
