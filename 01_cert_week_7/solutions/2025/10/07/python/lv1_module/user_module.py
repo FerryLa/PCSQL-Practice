@@ -1,4 +1,4 @@
-# 모듈 사용 : import
+# (가위바위보) 모듈 사용 : import
 
 import rsp_module
 
