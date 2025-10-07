@@ -1,4 +1,4 @@
-# 모듈 만들기 : 함수 def, random.choice
+# (가위바위보) 모듈 만들기 : 함수 def, random.choice
 
 def random_rsp():
     """무작위 가위바위보를 낸다."""
