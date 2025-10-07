@@ -7,5 +7,24 @@ out/
 target/
 # OS
 .DS_Store
-# Python
+# Python 등 공통 쓰레기
+__pycache__/
+*.pyc
 .venv/
+venv/
+# DB data
+mysqldata/
+mysql/
+db-data/
+data/
+**/#ib_*.dblwr
+**/#ib_redo*
+ib_logfile*
+ibdata*
+# Secrets
+.env
+
+
+
+
+
