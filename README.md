@@ -18,11 +18,11 @@
 
 - [x] PCCP Lv.1 Python: 조건문/반복문/리스트/문자열 (매일 1문제)
 
-PCSQL: SELECT, WHERE, JOIN 기초 (주 3일)
+- [x] PCSQL: SELECT, WHERE, JOIN 기초 (주 3일)
 
-GitHub 업로드: Week_1/problemX.py, Week_1/problemY.sql
+- [x] GitHub 업로드: Week_1/problemX.py, Week_1/problemY.sql
 
-오답노트: Week_1/review.md
+- [x] 오답노트: Week_1/review.md
 
 ### ✅ 주차별 흐름 (요약)
 
