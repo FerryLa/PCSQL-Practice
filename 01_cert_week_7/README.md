@@ -6,6 +6,7 @@
 | Date       | Status | Note |
 |------------|--------|------|
 | 2025-10-09 | ⏰ | |
+| 2025-10-08 | ❌ | |
 | 2025-10-07 | ✅ |  |
 | 2025-10-06 | ✅ |  |
 | 2025-10-05 | ❌ |  |
@@ -62,13 +63,13 @@
 
 ### Week 1 (10/03 ~ 10/09)
 
-- [ ] 10/03: PCCP Python 기초 + SQL SELECT
-- [ ] 10/04: PCCP Python 기초 + JOIN
-- [ ] 10/05: PCCP Python 기초 문제
-- [ ] 10/06: SQL GROUP BY/HAVING 문제
-- [ ] 10/07: PCCP Python 문제
-- [ ] 10/08: PCCP Python + SQL 문제
-- [ ] 10/09: Week 1 회고 & 오답노트
+- [x] 10/03: PCCP Python 기초 + SQL SELECT
+- [x] 10/04: PCCP Python 기초 + JOIN
+- [x] 10/05: PCCP Python 기초 문제
+- [] 10/06: SQL GROUP BY/HAVING 문제
+- [x] 10/07: PCCP Python 문제
+- [] 10/08: PCCP Python + SQL 문제
+- [x] 10/09: Week 1 회고 & 오답노트
 
 ---
 
