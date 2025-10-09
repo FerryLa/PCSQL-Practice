@@ -1,0 +1,27 @@
+# docker-compose-practice.yml
+
+# w3school 예제 테이블
+services:
+  db:
+    image: mysql:8
+    container_name: mysql_practice
+    command: [ "mysqld", "--default-authentication-plugin=mysql_native_password" ]
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PRACTICE_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${PRACTICE_NAME}
+      MYSQL_USER: ${PRACTICE_USER}
+      MYSQL_PASSWORD: ${PRACTICE_PASSWORD}
+    volumes:
+      - ./practice_data:/var/lib/mysql
+      - ./practice_init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u${DB_USER} -p${DB_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# 실행
+# docker-compose -f docker-compose-practice.yml up -d
