@@ -15,7 +15,6 @@ jobs:
     env:
       TZ: Asia/Seoul
       README_PATH: 01_cert_week_7/README.md
-      # earliest date to backfill, ensures missing dates such as 10/05 are always generated
       START_DATE: '2025-10-01'
 
     permissions:
@@ -23,11 +22,12 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Checkout main
+      # develop 브랜치를 체크아웃
+      - name: Checkout develop
         uses: actions/checkout@v4
         with:
-          # checkout the main branch so updates are applied to the primary branch
-          ref: main
+          # develop 브랜치를 체크아웃하여 개발 브랜치에 변경 사항 적용
+          ref: develop
           fetch-depth: 0
 
       # 누락 날짜를 **확실히** 채우는 안전 백필
@@ -185,19 +185,19 @@ jobs:
             } else {
               core.setOutput('changed', changed ? '1' : '0');
             }
-
-      - name: Create PR to main
-        if: steps.backfill.outputs.changed == '1' || steps.close_mark.outputs.changed == '1'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # open the pull request against the main branch to ensure the README on main is updated
-          base: main
-          branch: automation/daily-close
-          # append a timestamp to each branch name so that new branches don't overwrite old ones
-          branch-suffix: timestamp
-          # automatically delete the source branch once the PR is merged
-          delete-branch: true
-          title: "chore: daily close (robust backfill & close past blanks)"
-          commit-message: "chore: daily close (robust backfill & close past blanks)"
-          add-paths: ${{ env.README_PATH }}
+            
+            # 변경이 있으면 develop 브랜치 대상으로 PR 생성
+            - name: Create PR to develop
+              if: steps.backfill.outputs.changed == '1' || steps.close_mark.outputs.changed == '1'
+              uses: peter-evans/create-pull-request@v6
+              with:
+                token: ${{ secrets.GITHUB_TOKEN }}
+                # develop 브랜치로의 PR을 만들어 develop의 README를 업데이트
+                base: develop
+                branch: automation/daily-close
+                branch-suffix: timestamp
+                # PR이 병합된 뒤 자동으로 소스 브랜치를 삭제
+                delete-branch: true
+                title: "chore: daily close (robust backfill & close past blanks)"
+                commit-message: "chore: daily close (robust backfill & close past blanks)"
+                add-paths: ${{ env.README_PATH }}
