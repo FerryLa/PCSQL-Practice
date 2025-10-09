@@ -1,0 +1,218 @@
+name: Daily Close (weekly summary)
+
+on:
+  schedule:
+    - cron: '5 15 * * *'   # 매일 00:05 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
+      README_PATH: 01_cert_week_7/README.md
+      START_DATE: '2024-10-03'
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Update weekly progress table
+        id: update_progress
+        uses: actions/github-script@v7
+        env:
+          README_PATH: ${{ env.README_PATH }}
+          START_DATE: ${{ env.START_DATE }}
+        with:
+          script: |
+            const fs = require('fs');
+            const core = require('@actions/core');
+
+            const path = process.env.README_PATH;
+            if (!fs.existsSync(path)) {
+              core.setFailed(`README not found: ${path}`);
+              return;
+            }
+
+            const START_MARK = '<!-- PROGRESS:START -->';
+            const END_MARK = '<!-- PROGRESS:END -->';
+            const md = fs.readFileSync(path, 'utf8');
+            const startIdx = md.indexOf(START_MARK);
+            const endIdx = md.indexOf(END_MARK);
+
+            if (startIdx < 0 || endIdx < 0 || endIdx < startIdx) {
+              core.setFailed('Progress markers not found');
+              return;
+            }
+
+            const before = md.slice(0, startIdx + START_MARK.length);
+            const block = md.slice(startIdx + START_MARK.length, endIdx);
+            const after = md.slice(endIdx);
+
+            const z = n => String(n).padStart(2, '0');
+            const toDate = s => {
+              const [Y, M, D] = s.split('-').map(Number);
+              return new Date(Y, M - 1, D);
+            };
+            const toStr = d => `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+            const formatMD = s => {
+              const [, M, D] = s.split('-');
+              return `${M}/${D}`;
+            };
+
+            const entries = new Map();
+            const splitRow = line => line.split('|').slice(1, -1).map(cell => cell.trim());
+            const lines = block.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line || !line.startsWith('|')) continue;
+
+              const headerCells = splitRow(line);
+              if (!headerCells.length || !/^Week/i.test(headerCells[0])) continue;
+
+              const dateCells = headerCells.slice(1);
+              if (!dateCells.length) continue;
+
+              let offset = 1;
+              if (i + offset >= lines.length || !/^\s*\|(?:\s*-+\s*\|)+\s*$/.test(lines[i + offset])) continue;
+              offset++;
+
+              if (i + offset >= lines.length) continue;
+              const statusLine = lines[i + offset].trim();
+              const statusCells = splitRow(statusLine);
+              if (!statusCells.length || !/^Status$/i.test(statusCells[0])) continue;
+              offset++;
+
+              let noteCells = null;
+              if (i + offset < lines.length) {
+                const maybeNote = lines[i + offset].trim();
+                if (maybeNote.startsWith('|')) {
+                  const parts = splitRow(maybeNote);
+                  if (parts.length && /^Note$/i.test(parts[0])) {
+                    noteCells = parts;
+                    offset++;
+                  }
+                }
+              }
+
+              for (let idx = 0; idx < dateCells.length; idx++) {
+                const raw = dateCells[idx];
+                const match = raw.match(/(\d{4}-\d{2}-\d{2})/);
+                if (!match) continue;
+                const date = match[1];
+                if (!entries.has(date)) entries.set(date, { status: '', note: '' });
+
+                const statusValue = statusCells[idx + 1] ?? '';
+                const noteValue = noteCells ? (noteCells[idx + 1] ?? '') : '';
+                entries.get(date).status = statusValue.trim();
+                entries.get(date).note = noteValue.trim();
+              }
+            }
+
+            if (entries.size === 0) {
+              const rowRe = /^\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*?)\s*\|?\s*$/;
+              for (const rawLine of lines) {
+                const line = rawLine.trim();
+                const match = line.match(rowRe);
+                if (!match) continue;
+                const [, date, status, note] = match;
+                entries.set(date, { status: status.trim(), note: note.trim() });
+              }
+            }
+
+            const kstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+            const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
+
+            const startEnv = (process.env.START_DATE || '').trim();
+            let startDate = startEnv ? toDate(startEnv) : null;
+            if (entries.size) {
+              const firstEntryDate = toDate([...entries.keys()].sort()[0]);
+              if (!startDate || firstEntryDate < startDate) startDate = firstEntryDate;
+            }
+            if (!startDate) {
+              startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            }
+
+            let endDate = today;
+            if (entries.size) {
+              const lastEntryDate = toDate([...entries.keys()].sort().pop());
+              if (lastEntryDate > endDate) endDate = lastEntryDate;
+            }
+
+            const allDates = [];
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+              allDates.push(toStr(d));
+            }
+
+            const isEmptyStatus = status => {
+              if (!status) return true;
+              const clean = status.replace(/\s+/g, '');
+              return clean === '' || clean === '⬜' || clean === '🟪';
+            };
+
+            for (const date of allDates) {
+              if (!entries.has(date)) entries.set(date, { status: '', note: '' });
+              const entryDate = toDate(date);
+              if (entryDate < today) {
+                const current = entries.get(date);
+                if (isEmptyStatus(current.status)) {
+                  current.status = '❌';
+                }
+              }
+            }
+
+            const weeks = [];
+            for (let i = 0; i < allDates.length; i += 7) {
+              weeks.push(allDates.slice(i, i + 7));
+            }
+
+            const tables = [];
+            weeks.forEach((chunk, index) => {
+              if (!chunk.length) return;
+              const weekLabel = `Week ${index + 1} (${formatMD(chunk[0])} ~ ${formatMD(chunk[chunk.length - 1])})`;
+              const headerCells = [weekLabel, ...chunk];
+              const headerLine = '| ' + headerCells.join(' | ') + ' |';
+              const separatorLine = '|' + headerCells.map(() => '------------').join('|') + '|';
+              const statusCells = ['Status', ...chunk.map(date => entries.get(date)?.status ?? '')];
+              const noteCells = ['Note', ...chunk.map(date => entries.get(date)?.note ?? '')];
+              const statusLine = '| ' + statusCells.join(' | ') + ' |';
+              const noteLine = '| ' + noteCells.join(' | ') + ' |';
+              tables.push([headerLine, separatorLine, statusLine, noteLine].join('\n'));
+            });
+
+            const newBlock = '\n' + tables.join('\n\n') + '\n';
+            const updated = before + newBlock + after;
+
+            if (updated !== md) {
+              fs.writeFileSync(path, updated, 'utf8');
+              core.setOutput('changed', '1');
+            } else {
+              core.setOutput('changed', '0');
+            }
+
+      - name: Create PR to develop
+        if: steps.update_progress.outputs.changed == '1'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: develop
+          branch: automation/daily-close
+          branch-suffix: timestamp
+          delete-branch: true
+          title: "chore: update weekly progress"
+          commit-message: "chore: update weekly progress"
+          add-paths: ${{ env.README_PATH }}
+          merge: true
+          merge-method: squash
