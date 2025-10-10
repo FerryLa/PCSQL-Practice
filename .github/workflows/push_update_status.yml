@@ -17,6 +17,9 @@ jobs:
     env:
       TZ: Asia/Seoul
       README_PATH: 01_cert_week_7/README.md
+      START_DATE: '2025-10-01'
+      FIRST_WEEK_LENGTH: '2'
+      WEEK_START_INDEX: '0'
     steps:
       # HEAD~1과 비교하려면 최소 2개 커밋이 필요
       - name: Checkout current ref
@@ -33,113 +36,223 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = process.env.README_PATH;
 
+            const path = process.env.README_PATH;
             if (!fs.existsSync(path)) { core.warning(`Skip: ${path} not found`); return; }
 
-            let md = fs.readFileSync(path, 'utf8');
-            const S = '<!-- PROGRESS:START -->';
-            const E = '<!-- PROGRESS:END -->';
-            const si = md.indexOf(S), ei = md.indexOf(E);
-            if (si < 0 || ei < 0) { core.warning('Skip: markers missing'); return; }
+            const START_MARK = '<!-- PROGRESS:START -->';
+            const END_MARK = '<!-- PROGRESS:END -->';
+            const START_DATE = (process.env.START_DATE || '').trim();
+            const FIRST_WEEK_LENGTH = Number.parseInt(process.env.FIRST_WEEK_LENGTH || '', 10);
+            const WEEK_START_INDEX = Number.parseInt(process.env.WEEK_START_INDEX || '', 10);
+            const DEFAULT_WEEK_LENGTH = 7;
+            const SEPARATOR_CELL = '------------';
 
-            // 블록 추출 (마커 사이)
-            const before = md.slice(0, si + S.length);
-            let   block  = md.slice(si + S.length, ei);
-            const after  = md.slice(ei);
+            const z = (n) => String(n).padStart(2, '0');
+            const toDate = (s) => { const [Y, M, D] = s.split('-').map(Number); return new Date(Y, M - 1, D); };
+            const toStr = (d) => `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+            const formatMD = (s) => { const [, M, D] = s.split('-'); return `${M}/${D}`; };
+            const splitRow = (line) => line.split('|').slice(1, -1).map((cell) => cell.trim());
+            const isEmptyStatus = (s) => {
+              if (!s) return true;
+              const clean = s.trim();
+              return clean === '' || clean === '⬜' || clean === '🟪';
+            };
 
-            // 기존 행만 뽑기(헤더/구분선 제거)
-            const rawLines = block.split('\n')
-              .map(s => s.trim())
-              .filter(s => s && !/^(\| *Date *\| *Status *\| *Note *\|?)$/.test(s) && !/^(\|-{2,}\|[-| ]*?)$/.test(s));
+            const md = fs.readFileSync(path, 'utf8');
+            const startIdx = md.indexOf(START_MARK);
+            const endIdx = md.indexOf(END_MARK);
+            if (startIdx < 0 || endIdx < 0 || endIdx < startIdx) {
+              core.warning('Skip: progress markers missing');
+              return;
+            }
+
+            const before = md.slice(0, startIdx + START_MARK.length);
+            const block = md.slice(startIdx + START_MARK.length, endIdx);
+            const after = md.slice(endIdx);
+            const lines = block.split('\n');
+
+            const entries = new Map();
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line || !line.startsWith('|')) continue;
+
+              const headerCells = splitRow(line);
+              if (!headerCells.length || !/^Week/i.test(headerCells[0])) continue;
+
+              const dateCells = headerCells.slice(1);
+              if (!dateCells.length) continue;
+
+              let offset = 1;
+              if (i + offset >= lines.length || !/^\s*\|(?:\s*-+\s*\|)+\s*$/.test(lines[i + offset])) continue;
+              offset++;
+
+              if (i + offset >= lines.length) continue;
+              const statusLine = lines[i + offset].trim();
+              const statusCells = splitRow(statusLine);
+              if (!statusCells.length || !/^Status$/i.test(statusCells[0])) continue;
+              offset++;
+
+              let noteCells = null;
+              if (i + offset < lines.length) {
+                const maybeNote = lines[i + offset].trim();
+                if (maybeNote.startsWith('|')) {
+                  const parts = splitRow(maybeNote);
+                  if (parts.length && /^Note$/i.test(parts[0])) {
+                    noteCells = parts;
+                  }
+                }
+              }
+
+              for (let idx = 0; idx < dateCells.length; idx++) {
+                const match = dateCells[idx].match(/(\d{4}-\d{2}-\d{2})/);
+                if (!match) continue;
+                const date = match[1];
+                if (!entries.has(date)) entries.set(date, { status: '', note: '' });
+                const statusValue = statusCells[idx + 1] ?? '';
+                const noteValue = noteCells ? (noteCells[idx + 1] ?? '') : '';
+                entries.get(date).status = statusValue.trim();
+                entries.get(date).note = noteValue.trim();
+              }
+            }
+
+            if (entries.size === 0) {
+              const rowRe = /^\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*?)\s*\|?\s*$/;
+              for (const rawLine of lines) {
+                const line = rawLine.trim();
+                const match = line.match(rowRe);
+                if (!match) continue;
+                const [, date, status, note] = match;
+                entries.set(date, { status: status.trim(), note: note.trim() });
+              }
+            }
 
             // 변경 파일에서 날짜 찾기 + git diff fallback
             const commits = Array.isArray(context.payload.commits) ? context.payload.commits : [];
             const changedPaths = [];
             for (const c of commits) {
-              const add = Array.isArray(c.added)?c.added:[], mod = Array.isArray(c.modified)?c.modified:[], rem = Array.isArray(c.removed)?c.removed:[];
-              for (const p of [...add, ...mod, ...rem]) changedPaths.push(p);
+              const added = Array.isArray(c.added) ? c.added : [];
+              const modified = Array.isArray(c.modified) ? c.modified : [];
+              const removed = Array.isArray(c.removed) ? c.removed : [];
+              for (const p of [...added, ...modified, ...removed]) changedPaths.push(p);
             }
             if (changedPaths.length === 0) {
               try {
                 const { execSync } = require('child_process');
                 const out = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
-                out.split('\n').filter(Boolean).forEach(p => changedPaths.push(p));
+                out.split('\n').filter(Boolean).forEach((p) => changedPaths.push(p));
                 core.info('Used git diff fallback for changed paths.');
               } catch {}
             }
+
             const re = /(?:^|\/)solutions\/(\d{4})\/(\d{2})\/(\d{2})\//;
             const dateSet = new Set();
             for (const f of changedPaths) {
-              const m = typeof f === 'string' ? f.match(re) : null;
-              if (m) dateSet.add(`${m[1]}-${m[2]}-${m[3]}`);
+              const match = typeof f === 'string' ? f.match(re) : null;
+              if (match) dateSet.add(`${match[1]}-${match[2]}-${match[3]}`);
             }
 
-            // 오늘/어제 폴더가 실제 있으면 후보에 추가(푸시 없이 수동 파일 추가/이동 대비)
             const nowKST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-            const z = n => String(n).padStart(2,'0');
-            const today = `${nowKST.getFullYear()}-${z(nowKST.getMonth()+1)}-${z(nowKST.getDate())}`;
-            const yObj = new Date(nowKST); yObj.setDate(yObj.getDate()-1);
-            const yesterday = `${yObj.getFullYear()}-${z(yObj.getMonth()+1)}-${z(yObj.getDate())}`;
+            const today = `${nowKST.getFullYear()}-${z(nowKST.getMonth() + 1)}-${z(nowKST.getDate())}`;
+            const yObj = new Date(nowKST); yObj.setDate(yObj.getDate() - 1);
+            const yesterday = `${yObj.getFullYear()}-${z(yObj.getMonth() + 1)}-${z(yObj.getDate())}`;
 
             const rootDir = path.replace(/\/README\.md$/, '');
             const solRoot = `${rootDir}/solutions`;
-            const dirFor = (d) => { const [Y,M,D] = d.split('-'); return `${solRoot}/${Y}/${M}/${D}`; };
+            const dirFor = (d) => {
+              const [Y, M, D] = d.split('-');
+              return `${solRoot}/${Y}/${M}/${D}`;
+            };
             try {
               if (!dateSet.size) {
-                if (fs.existsSync(dirFor(today)))     dateSet.add(today);
+                if (fs.existsSync(dirFor(today))) dateSet.add(today);
                 if (fs.existsSync(dirFor(yesterday))) dateSet.add(yesterday);
               }
             } catch {}
 
             if (dateSet.size === 0) { core.info('No solution-date found. Skip.'); return; }
 
-            // 마킹 규칙
             const hour = nowKST.getHours();
-            const isEmpty = s => ['','⬜','🟪'].includes(String(s).trim());
             const wantMark = (date) => {
               if (date === today) return '✅';
               if (date === yesterday && hour < 6) return '⏰';
               return null;
             };
 
-            // 기존 행 인덱스 맵(date -> idx)
-            const rowIdx = new Map();
-            rawLines.forEach((line, i) => {
-              const m = line.match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-              if (m) rowIdx.set(m[1], i);
-            });
-
-            let lines = [...rawLines];
-            let changed = false;
-
-            for (const date of dateSet) {
+            const sortedDateSet = [...dateSet].sort();
+            for (const date of sortedDateSet) {
+              if (!entries.has(date)) entries.set(date, { status: '', note: '' });
               const mark = wantMark(date);
-              if (!mark) continue;
-
-              if (rowIdx.has(date)) {
-                const i = rowIdx.get(date);
-                const m = lines[i].match(/^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/);
-                const status = m ? m[2] : '';
-                const rest   = m ? (m[3] || '').replace(/\|+\s*$/, '').trim() : '';
-                if (isEmpty(status)) {
-                  lines[i] = `| ${date} | ${mark} | ${rest} |`;
-                  changed = true;
+              if (mark) {
+                const current = entries.get(date);
+                if (isEmptyStatus(current.status)) {
+                  current.status = mark;
                 }
-              } else {
-                // 새 날짜는 최상단에 삽입(최근일이 위쪽)
-                lines.unshift(`| ${date} | ${mark} | |`);
-                changed = true;
               }
             }
 
-            if (!changed) { core.info('No table changes needed.'); return; }
+            const sortedEntryKeys = [...entries.keys()].sort();
+            let startDate = START_DATE ? toDate(START_DATE) : null;
+            if (sortedEntryKeys.length) {
+              const firstEntry = toDate(sortedEntryKeys[0]);
+              if (!startDate || firstEntry < startDate) startDate = firstEntry;
+            }
+            if (!startDate) {
+              startDate = toDate(sortedDateSet[0]);
+            }
 
-            // 표는 항상 마커 블록 안에 "헤더 + 구분선 + 데이터"를 통째로 쓴다
-            const header = '| Date       | Status | Note |\n|------------|--------|------|';
-            block = '\n' + header + '\n' + lines.join('\n') + '\n';
+            let endDate = sortedEntryKeys.length ? toDate(sortedEntryKeys[sortedEntryKeys.length - 1]) : startDate;
+            if (sortedDateSet.length) {
+              const latestCandidate = toDate(sortedDateSet[sortedDateSet.length - 1]);
+              if (latestCandidate > endDate) endDate = latestCandidate;
+            }
 
-            const out = before + block + after;
+            const allDates = [];
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+              const key = toStr(d);
+              allDates.push(key);
+              if (!entries.has(key)) entries.set(key, { status: '', note: '' });
+            }
+
+            const effectiveFirstWeekLength = Number.isFinite(FIRST_WEEK_LENGTH) && FIRST_WEEK_LENGTH > 0 ? FIRST_WEEK_LENGTH : DEFAULT_WEEK_LENGTH;
+            const weekStartIndex = Number.isFinite(WEEK_START_INDEX) ? WEEK_START_INDEX : 1;
+
+            const weeks = [];
+            if (allDates.length) {
+              const remaining = [...allDates];
+              const firstChunkSize = Math.min(effectiveFirstWeekLength, remaining.length);
+              if (firstChunkSize > 0) {
+                weeks.push(remaining.splice(0, firstChunkSize));
+              }
+              while (remaining.length) {
+                weeks.push(remaining.splice(0, DEFAULT_WEEK_LENGTH));
+              }
+            }
+
+            const tables = weeks
+              .map((chunk, index) => {
+                if (!chunk.length) return '';
+                const labelIndex = weekStartIndex + index;
+                const weekLabel = `Week ${labelIndex} (${formatMD(chunk[0])} ~ ${formatMD(chunk[chunk.length - 1])})`;
+                const headerCells = [weekLabel, ...chunk];
+                const headerLine = '| ' + headerCells.join(' | ') + ' |';
+                const separatorLine = '|' + headerCells.map(() => SEPARATOR_CELL).join('|') + '|';
+                const statusCells = ['Status', ...chunk.map((date) => entries.get(date)?.status ?? '')];
+                const noteCells = ['Note', ...chunk.map((date) => entries.get(date)?.note ?? '')];
+                const statusLine = '| ' + statusCells.join(' | ') + ' |';
+                const noteLine = '| ' + noteCells.join(' | ') + ' |';
+                return [headerLine, separatorLine, statusLine, noteLine].join('\n');
+              })
+              .filter(Boolean);
+
+            const newBlock = '\n' + tables.join('\n\n') + '\n';
+            if (newBlock === block) {
+              core.info('No table changes needed.');
+              return;
+            }
+
+            const out = before + newBlock + after;
             fs.writeFileSync(path, out, 'utf8');
             core.info(`Updated ${path} for dates: ${[...dateSet].join(', ')}`);
 

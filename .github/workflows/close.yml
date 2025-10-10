@@ -15,7 +15,9 @@ jobs:
     env:
       TZ: Asia/Seoul
       README_PATH: 01_cert_week_7/README.md
-      START_DATE: '2024-10-03'
+      START_DATE: '2025-10-01'
+      FIRST_WEEK_LENGTH: '2'
+      WEEK_START_INDEX: '0'
 
     permissions:
       contents: write
@@ -136,8 +138,12 @@ jobs:
 
             const startEnv = (process.env.START_DATE || '').trim();
             let startDate = startEnv ? toDate(startEnv) : null;
+            let firstEntryDate = null;
+            let lastEntryDate = null;
             if (entries.size) {
-              const firstEntryDate = toDate([...entries.keys()].sort()[0]);
+              const sortedEntryKeys = [...entries.keys()].sort();
+              firstEntryDate = toDate(sortedEntryKeys[0]);
+              lastEntryDate = toDate(sortedEntryKeys[sortedEntryKeys.length - 1]);
               if (!startDate || firstEntryDate < startDate) startDate = firstEntryDate;
             }
             if (!startDate) {
@@ -145,15 +151,19 @@ jobs:
             }
 
             let endDate = today;
-            if (entries.size) {
-              const lastEntryDate = toDate([...entries.keys()].sort().pop());
-              if (lastEntryDate > endDate) endDate = lastEntryDate;
+            if (lastEntryDate && lastEntryDate > endDate) {
+              endDate = lastEntryDate;
             }
 
             const allDates = [];
             for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
               allDates.push(toStr(d));
             }
+
+            const firstWeekLengthEnv = Number.parseInt(process.env.FIRST_WEEK_LENGTH || '', 10);
+            const firstWeekLength = Number.isFinite(firstWeekLengthEnv) && firstWeekLengthEnv > 0 ? firstWeekLengthEnv : 7;
+            const weekStartIndexEnv = Number.parseInt(process.env.WEEK_START_INDEX || '', 10);
+            const weekStartIndex = Number.isFinite(weekStartIndexEnv) ? weekStartIndexEnv : 1;
 
             const isEmptyStatus = status => {
               if (!status) return true;
@@ -164,7 +174,8 @@ jobs:
             for (const date of allDates) {
               if (!entries.has(date)) entries.set(date, { status: '', note: '' });
               const entryDate = toDate(date);
-              if (entryDate < today) {
+              const shouldAutoFail = entryDate < today && (!firstEntryDate || entryDate >= firstEntryDate);
+              if (shouldAutoFail) {
                 const current = entries.get(date);
                 if (isEmptyStatus(current.status)) {
                   current.status = '❌';
@@ -173,14 +184,22 @@ jobs:
             }
 
             const weeks = [];
-            for (let i = 0; i < allDates.length; i += 7) {
-              weeks.push(allDates.slice(i, i + 7));
+            if (allDates.length) {
+              const remaining = [...allDates];
+              const firstChunkSize = Math.min(firstWeekLength, remaining.length);
+              if (firstChunkSize > 0) {
+                weeks.push(remaining.splice(0, firstChunkSize));
+              }
+              while (remaining.length) {
+                weeks.push(remaining.splice(0, 7));
+              }
             }
 
             const tables = [];
             weeks.forEach((chunk, index) => {
               if (!chunk.length) return;
-              const weekLabel = `Week ${index + 1} (${formatMD(chunk[0])} ~ ${formatMD(chunk[chunk.length - 1])})`;
+              const labelIndex = weekStartIndex + index;
+              const weekLabel = `Week ${labelIndex} (${formatMD(chunk[0])} ~ ${formatMD(chunk[chunk.length - 1])})`;
               const headerCells = [weekLabel, ...chunk];
               const headerLine = '| ' + headerCells.join(' | ') + ' |';
               const separatorLine = '|' + headerCells.map(() => '------------').join('|') + '|';
