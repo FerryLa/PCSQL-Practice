@@ -2,7 +2,7 @@ name: Daily Close (mark all past blanks as ❌)
 
 on:
   schedule:
-    - cron: '5 15 * * *'   # 매일 00:05 KST (UTC+9 → 15:05 UTC)
+    - cron: '5 15 * * *'   # 매일 00:05 KST
   workflow_dispatch:
 
 permissions:
@@ -14,89 +14,190 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
-      README_PATH: 01_cert_week_7/README.md   # 너의 README 경로
-      START_DATE: ''                           # 예: '2025-10-01' 넣으면 그 이후만 마감. 비우면 전체 과거
+      README_PATH: 01_cert_week_7/README.md
+      START_DATE: '2025-10-01'
+
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
+      # develop 브랜치를 체크아웃
       - name: Checkout develop
         uses: actions/checkout@v4
         with:
-          ref: refs/heads/develop
-          fetch-depth: 2
+          # develop 브랜치를 체크아웃하여 개발 브랜치에 변경 사항 적용
+          ref: develop
+          fetch-depth: 0
 
-      - name: Mark ❌ for all past empty cells (incl. 🟪)
-        id: close_mark                          # ← 출력값을 쓰기 위해 id 추가
+      # 누락 날짜를 **확실히** 채우는 안전 백필
+      - name: Backfill missing dates as empty rows (robust)
+        id: backfill
         uses: actions/github-script@v7
         env:
           README_PATH: ${{ env.README_PATH }}
           START_DATE: ${{ env.START_DATE }}
         with:
           script: |
-            const fs = require('fs'); // core, github, context 전역 제공
+            const fs = require('fs');
             const path = process.env.README_PATH;
             if (!fs.existsSync(path)) { core.setFailed(`README not found: ${path}`); return; }
 
             let md = fs.readFileSync(path, 'utf8');
             const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
             const si=md.indexOf(S), ei=md.indexOf(E);
-            if (si<0 || ei<0) { core.setFailed('Progress markers not found'); return; }
+            if (si<0 || ei<0 || ei<si) { core.setFailed('Progress markers not found'); return; }
 
             const before = md.slice(0, si+S.length);
             let   block  = md.slice(si+S.length, ei);
             const after  = md.slice(ei);
 
-            // 블록 행만(헤더/구분선 제거)
-            let lines = block.split('\n').map(s=>s.trim()).filter(Boolean);
-            const isHeader = s => /^\|\s*Date\s*\|\s*Status\s*\|\s*Note\s*\|?$/.test(s);
-            const isDivider= s => /^\|[-\s|]+\|$/.test(s);
-            lines = lines.filter(s => !(isHeader(s) || isDivider(s)));
-
-            const kstNow = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
             const z=n=>String(n).padStart(2,'0');
-            const today = new Date(`${kstNow.getFullYear()}-${z(kstNow.getMonth()+1)}-${z(kstNow.getDate())}T00:00:00`);
-            const toDate = d => { const [Y,M,D]=d.split('-').map(Number); return new Date(Y, M-1, D); };
+            const toDate = s => { const [Y,M,D]=s.split('-').map(Number); return new Date(Y, M-1, D); };
+            const toStr  = d => `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+
+            // KST 오늘 00:00
+            const kstNow = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+            const today  = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
+
+            // 표 라인 파싱
+            const rawLines = block.split('\n');
+            const clean = s => s.replace(/\r/g,'').trim();
+            const isHeader = s => /^\|\s*Date\s*\|\s*Status\s*\|\s*Note\s*\|?\s*$/.test(s);
+            const isDivider= s => /^\|\s*-+\s*\|\s*-+\s*\|\s*-+\s*\|?\s*$/.test(s);
+            const rowRe = /^\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*?)\s*\|?\s*$/;
+
+            // 날짜 → 원본행 맵 (기존 행 보존)
+            const map = new Map();
+            for (const l0 of rawLines) {
+              const l = clean(l0);
+              if (!l || isHeader(l) || isDivider(l)) continue;
+              const m = l.match(rowRe);
+              if (m) {
+                const date = m[1];
+                // 마지막에 본 행으로 유지(수정된 최신 행 우선)
+                map.set(date, `| ${m[1]} | ${m[2].trim()} | ${m[3].trim()} |`);
+              }
+            }
+
+            // 시작일 계산
+            let start;
+            const floorStr=(process.env.START_DATE||'').trim();
+            if (floorStr) {
+              start = toDate(floorStr);
+            } else if (map.size) {
+              // 표에 있는 가장 오래된 날짜
+              start = toDate([...map.keys()].sort()[0]);
+            } else {
+              // 표가 비어 있으면 이번 달 1일
+              start = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+
+            // 연속 범위 생성해서 빠진 날은 빈 행으로 채움
+            let changed = false;
+            for (let d=new Date(start); d<=today; d.setDate(d.getDate()+1)) {
+              const s = toStr(d);
+              if (!map.has(s)) {
+                map.set(s, `| ${s} |  |  |`);
+                changed = true;
+              }
+            }
+
+            // 날짜 내림차순으로 재구성
+            const header='| Date       | Status | Note |\n|------------|--------|------|';
+            const lines = [...map.keys()].sort((a,b)=> a<b ? 1 : -1).map(k=>map.get(k));
+            const outBlock = '\n'+header+'\n'+lines.join('\n')+'\n';
+            const out = before + outBlock + after;
+
+            if (out !== md) {
+              fs.writeFileSync(path, out, 'utf8');
+              core.setOutput('changed','1');
+            } else {
+              core.setOutput('changed', changed ? '1' : '0');
+            }
+
+      # 과거 빈칸/🟪 → ❌, 오늘은 제외
+      - name: Mark ❌ for all past empty cells (incl. 🟪)
+        id: close_mark
+        uses: actions/github-script@v7
+        env:
+          README_PATH: ${{ env.README_PATH }}
+          START_DATE: ${{ env.START_DATE }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = process.env.README_PATH;
+            if (!fs.existsSync(path)) { core.setFailed(`README not found: ${path}`); return; }
+
+            let md = fs.readFileSync(path, 'utf8');
+            const S='<!-- PROGRESS:START -->', E='<!-- PROGRESS:END -->';
+            const si=md.indexOf(S), ei=md.indexOf(E);
+            if (si<0 || ei<0 || ei<si) { core.setFailed('Progress markers not found'); return; }
+
+            const before = md.slice(0, si+S.length);
+            let   block  = md.slice(si+S.length, ei);
+            const after  = md.slice(ei);
+
+            const clean = s => s.replace(/\r/g,'').trim();
+            const isHeader = s => /^\|\s*Date\s*\|\s*Status\s*\|\s*Note\s*\|?\s*$/.test(s);
+            const isDivider= s => /^\|\s*-+\s*\|\s*-+\s*\|\s*-+\s*\|?\s*$/.test(s);
+            const rowRe = /^\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*?)\s*\|?\s*$/;
+
+            const z=n=>String(n).padStart(2,'0');
+            const toDate = s => { const [Y,M,D]=s.split('-').map(Number); return new Date(Y, M-1, D); };
+            const kstNow = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+            const today  = new Date(`${kstNow.getFullYear()}-${z(kstNow.getMonth()+1)}-${z(kstNow.getDate())}T00:00:00`);
 
             const floorStr=(process.env.START_DATE||'').trim();
             const hasFloor=!!floorStr;
             const floor   = hasFloor? toDate(floorStr): null;
 
             const isEmpty = s => ['','⬜','🟪'].includes(String(s).trim());
-            const rowRe = /^\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*(.*)\|?\s*$/;
 
+            const outLines = [];
             let changed=false;
-            const newLines = lines.map(line=>{
-              const m=line.match(rowRe); if(!m) return line;
-              const [,dateStr,statusRaw,restRaw]=m;
-              const d=toDate(dateStr);
-              if(!(d<today)) return line;
-              if(hasFloor && d<floor) return line;
-              const status = statusRaw.trim();
-              const rest   = (restRaw||'').replace(/\|+\s*$/,'').trim();
-              if(isEmpty(status)) { changed=true; return `| ${dateStr} | ❌ | ${rest} |`; }
-              return line;
-            });
 
-            if(changed){
-              const header='| Date       | Status | Note |\n|------------|--------|------|';
-              const outBlock = '\n'+header+'\n'+newLines.join('\n')+'\n';
-              const out = before + outBlock + after;
-              fs.writeFileSync(path,out,'utf8');
-              core.info('Closed past blanks as ❌ (including 🟪).');
-              core.setOutput('changed','1');      // ← 변경 발생 플래그
-            }else{
-              core.info('No past blanks to close.');
-              core.setOutput('changed','0');
+            for (const l0 of block.split('\n')) {
+              const l = clean(l0);
+              if (!l || isHeader(l) || isDivider(l)) continue;
+              const m = l.match(rowRe);
+              if (!m) { outLines.push(l0); continue; }
+
+              const [_, dateStr, statusRaw, noteRaw] = m;
+              const d = toDate(dateStr);
+              if ((hasFloor && d<floor) || !(d<today)) { outLines.push(`| ${dateStr} | ${statusRaw.trim()} | ${noteRaw.trim()} |`); continue; }
+
+              if (isEmpty(statusRaw)) {
+                outLines.push(`| ${dateStr} | ❌ | ${noteRaw.trim()} |`);
+                changed = true;
+              } else {
+                outLines.push(`| ${dateStr} | ${statusRaw.trim()} | ${noteRaw.trim()} |`);
+              }
             }
 
-      - name: Create PR to develop
-        if: steps.close_mark.outputs.changed == '1'          # ← 변경 없으면 PR 스킵
-        uses: peter-evans/create-pull-request@v6
-        with:
-          base: develop
-          title: "chore: daily close (mark past blanks as ❌)"
-          commit-message: "chore: daily close (mark past blanks as ❌)"
-          add-paths: |
-            ${{ env.README_PATH }}
-          branch: automation/daily-close               # 기본 브랜치명
-          branch-suffix: timestamp                     # ← 접미사로 충돌 회피
-          delete-branch: true                          # 머지 후 청소
-          update-existing-pr: true                     # 기존 PR 있으면 갱신
+            const header='| Date       | Status | Note |\n|------------|--------|------|';
+            const outBlock = '\n'+header+'\n'+outLines.join('\n')+'\n';
+            const out = before + outBlock + after;
+
+            if (out !== md) {
+              fs.writeFileSync(path, out, 'utf8');
+              core.setOutput('changed','1');
+            } else {
+              core.setOutput('changed', changed ? '1' : '0');
+            }
+            
+            # 변경이 있으면 develop 브랜치 대상으로 PR 생성
+            - name: Create PR to develop
+              if: steps.backfill.outputs.changed == '1' || steps.close_mark.outputs.changed == '1'
+              uses: peter-evans/create-pull-request@v6
+              with:
+                token: ${{ secrets.GITHUB_TOKEN }}
+                # develop 브랜치로의 PR을 만들어 develop의 README를 업데이트
+                base: develop
+                branch: automation/daily-close
+                branch-suffix: timestamp
+                # PR이 병합된 뒤 자동으로 소스 브랜치를 삭제
+                delete-branch: true
+                title: "chore: daily close (robust backfill & close past blanks)"
+                commit-message: "chore: daily close (robust backfill & close past blanks)"
+                add-paths: ${{ env.README_PATH }}
