@@ -1,9 +1,38 @@
 # IntelliJ
 .idea/
 *.iml
+
 # Build
 build/
 out/
 target/
+
 # OS
 .DS_Store
+
+# Python 등 공통 쓰레기
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# MySQL data
+mysqldata/
+practice_data/
+*.sdi
+
+# Credentials / Keys
+*.pem
+*.key
+*.crt
+
+# Docker junk
+*.log
+*.pid
+# Secret
+.env
+.env.*
+!.env.example
+
+
+

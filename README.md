@@ -1,4 +1,5 @@
 # 단기 7주 플랜
+=> 01_cert_week_7 폴더
 
 ## 📅 최종 타임라인 (10/2 ~ 11/21)
 
@@ -12,15 +13,16 @@
 
 ### ✅ Week 1 (10/3 ~ 10/9)
 
-GitHub Actions + 스크립트로 README 자동 수정 커밋 (깃허브 액션 연습)
+- [x] GitHub Actions + 스크립트로 README 자동 수정 커밋 (깃허브 액션 연습)  
+- 01_cert_week_7/README.md 파일 내용 하단에 자동 스케줄 체크
 
-PCCP Lv.1 Python: 조건문/반복문/리스트/문자열 (매일 1문제)
+- [x] PCCP Lv.1 Python: 조건문/반복문/리스트/문자열 (매일 1문제)
 
-PCSQL: SELECT, WHERE, JOIN 기초 (주 3일)
+- [x] PCSQL: SELECT, WHERE, JOIN 기초 (주 3일)
 
-GitHub 업로드: Week_1/problemX.py, Week_1/problemY.sql
+- [x] GitHub 업로드: Week_1/problemX.py, Week_1/problemY.sql
 
-오답노트: Week_1/review.md
+- [x] 오답노트: Week_1/review.md
 
 ### ✅ 주차별 흐름 (요약)
 
