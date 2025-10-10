@@ -30,8 +30,9 @@ practice_data/
 *.log
 *.pid
 # Secret
-.env.*
 .env
+.env.*
+!.env.example
 
 
 
