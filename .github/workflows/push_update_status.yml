@@ -269,6 +269,7 @@ jobs:
       # develop 에서는 PR만 생성(보호 브랜치 준수)
       - name: Create PR to develop
         if: github.ref_name == 'develop'
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           base: develop
@@ -277,3 +278,10 @@ jobs:
           commit-message: "chore: update README progress (push trigger)"
           add-paths: |
             ${{ env.README_PATH }}
+
+      - name: Enable auto-merge for PR
+        if: steps.cpr.outputs.pull-request-number
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash

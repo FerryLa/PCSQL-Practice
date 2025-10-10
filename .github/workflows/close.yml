@@ -222,6 +222,7 @@ jobs:
 
       - name: Create PR to develop
         if: steps.update_progress.outputs.changed == '1'
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -232,5 +233,11 @@ jobs:
           title: "chore: update weekly progress"
           commit-message: "chore: update weekly progress"
           add-paths: ${{ env.README_PATH }}
-          merge: true
+
+      - name: Enable auto-merge for PR
+        if: steps.cpr.outputs.pull-request-number
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash
