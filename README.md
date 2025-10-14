@@ -9,6 +9,11 @@
 11/2: ADsP 시험
 11/16: SQLD 시험
 11/21: 프로젝트·학습 최종 마감
+
+[추가]
+GitHub Actions 스크립트 자동화로 표 날짜체크 
+PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD 
+
 ```
 
 ### ✅ Week 1 (10/3 ~ 10/9)
@@ -28,12 +33,15 @@
 
 Week 2 (10/10 ~ 10/16): PCCP 기초+PCSQL 심화
 
-Week 3 (10/17 ~ 10/23, 시험 주): PCSQL 모의고사 / 시험
+- [x] PCCP 기초
+- [x] PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD
 
-Week 4 (10/24 ~ 10/30): PCCP DFS/BFS, ADsP 이론
+Week 3 (10/17 ~ 10/23): PCSQL 모의고사 / 시험
 
-Week 5 (10/31 ~ 11/6, 시험 주): PCSQL 고급, ADsP 기출 / 시험
+Week 4 (10/24 ~ 10/30, PCSQL 시험 주): 10/30 PCSQL 시험, PCCP DFS/BFS, ADsP 이론
+
+Week 5 (10/31 ~ 11/6, ADsP 시험 주): PCSQL 고급, ADsP 기출, 시험
 
 Week 6 (11/7 ~ 11/13): SQLD 대비 (JOIN, Subquery, 집합연산)
 
-Week 7 (11/14 ~ 11/21, 시험 주): SQLD 기출 풀이, 오답 정리 / 시험
+Week 7 (11/14 ~ 11/21, SQLD 시험 주): SQLD 기출 풀이, 오답 정리, 시험
