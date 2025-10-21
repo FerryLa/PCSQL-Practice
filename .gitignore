@@ -31,8 +31,8 @@ practice_data/
 *.pid
 # Secret
 .env
-.env.*
-!.env.example
+03_MySQL/w3school_example/.env
+!03_MySQL/w3school_example/.env
 
 
 
