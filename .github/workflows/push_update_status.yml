@@ -145,8 +145,8 @@ jobs:
                 core.info('Used git diff fallback for changed paths.');
               } catch {}
             }
-
-            const re = /(?:^|\/)solutions\/(\d{4})\/(\d{2})\/(\d{2})\//;
+            
+            const re = /(?:^|\/)solutions\/.*?(\d{4})\/(\d{2})\/(\d{2})\//;
             const dateSet = new Set();
             for (const f of changedPaths) {
               const match = typeof f === 'string' ? f.match(re) : null;
