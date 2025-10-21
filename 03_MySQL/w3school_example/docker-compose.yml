@@ -1,0 +1,25 @@
+# docker-compose.yml
+
+# w3school 예제 테이블
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql_w3school
+    env_file: .env
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "127.0.0.1:${HOST_MYSQL_PORT:-33306}:3306"   # 포트 겹치지 않게 기본값 다르게
+    volumes:
+      - ./mysqldata:/var/lib/mysql
+      - ./mysqlinit:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u${MYSQL_USER} -p${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+
+
+# 실행
+# docker-compose -f docker-compose.yml up -d
