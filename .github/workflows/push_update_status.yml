@@ -137,18 +137,23 @@ jobs:
               const removed = Array.isArray(c.removed) ? c.removed : [];
               for (const p of [...added, ...modified, ...removed]) changedPaths.push(p);
             }
-            if (changedPaths.length === 0) {
-              try {
-                const { execSync } = require('child_process');
-                const out = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
-                out.split('\n').filter(Boolean).forEach((p) => changedPaths.push(p));
-                core.info('Used git diff fallback for changed paths.');
-              } catch {}
+            const changedPathSet = new Set(changedPaths.filter((p) => typeof p === 'string' && p.trim() !== ''));
+            try {
+              const { execSync } = require('child_process');
+              const diffOut = execSync('git diff --name-only HEAD^ HEAD', { encoding: 'utf8' });
+              diffOut
+                .split('\n')
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .forEach((p) => changedPathSet.add(p));
+              core.info('Augmented changed paths with git diff.');
+            } catch (error) {
+              core.info(`Skip git diff augmentation: ${error?.message ?? error}`);
             }
-            
-            const re = /(?:^|\/)solutions\/.*?(\d{4})\/(\d{2})\/(\d{2})\//;
+
+            const re = /(?:^|\/)solutions(?:\/[^\/]+)*\/(\d{4})\/(\d{2})\/(\d{2})(?:\/|$)/;
             const dateSet = new Set();
-            for (const f of changedPaths) {
+            for (const f of changedPathSet) {
               const match = typeof f === 'string' ? f.match(re) : null;
               if (match) dateSet.add(`${match[1]}-${match[2]}-${match[3]}`);
             }
@@ -160,14 +165,32 @@ jobs:
 
             const rootDir = path.replace(/\/README\.md$/, '');
             const solRoot = `${rootDir}/solutions`;
-            const dirFor = (d) => {
+            const hasDateDir = (d) => {
               const [Y, M, D] = d.split('-');
-              return `${solRoot}/${Y}/${M}/${D}`;
+              const firstLevel = [];
+              try {
+                if (!fs.existsSync(solRoot)) return false;
+                const entries = fs.readdirSync(solRoot, { withFileTypes: true });
+                for (const entry of entries) {
+                  if (!entry.isDirectory()) continue;
+                  firstLevel.push(`${solRoot}/${entry.name}`);
+                }
+              } catch {
+                return false;
+              }
+
+              for (const base of [solRoot, ...firstLevel]) {
+                const candidate = `${base}/${Y}/${M}/${D}`;
+                try {
+                  if (fs.existsSync(candidate)) return true;
+                } catch {}
+              }
+              return false;
             };
             try {
               if (!dateSet.size) {
-                if (fs.existsSync(dirFor(today))) dateSet.add(today);
-                if (fs.existsSync(dirFor(yesterday))) dateSet.add(yesterday);
+                if (hasDateDir(today)) dateSet.add(today);
+                if (hasDateDir(yesterday)) dateSet.add(yesterday);
               }
             } catch {}
 
