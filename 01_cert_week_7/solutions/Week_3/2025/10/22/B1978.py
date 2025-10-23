@@ -1,5 +1,5 @@
 # (Python)과제: 주어진 정수 N이 소수인지 판별
-#
+# B1987: Find_prime_numbers
 # Title: 소수 판별
 # Difficulty: EASY
 # Link: https://www.acmicpc.net/problem/1978
