@@ -8,6 +8,8 @@
 -- Sample rows:
 --   INSERT INTO EMPLOYEE VALUES (1,'Alice',7000,NULL),(2,'Bob',8000,1),(3,'Carol',7500,1),(4,'Dave',7200,2);
 
+
+
 SELECT e.id, e.salary, e.manage_id
 FROM employees e
 LEFT JOIN employees m on e.manage_id = m.id
