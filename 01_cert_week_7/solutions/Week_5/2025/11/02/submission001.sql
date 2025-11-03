@@ -33,3 +33,11 @@ FROM (
     ) AS t
 ORDER BY cnt DESC, difficulty ASC
 LIMIT 1;
+
+-- 이렇게도 가능
+SELECT difficulty
+FROM submissions
+WHERE result = 'PASS'
+GROUP BY difficulty
+ORDER BY COUNT(*) DESC, difficulty ASC
+LIMIT 1;
