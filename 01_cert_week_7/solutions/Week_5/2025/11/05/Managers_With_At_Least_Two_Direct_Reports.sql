@@ -67,3 +67,5 @@ HAVING COUNT(*) >= 2
 ON e.id = m.manager_id
 ORDER BY e.id;
 
+-- 11/06 복습
+-- 상사의 다른 속성(name, salary 등)’을 함께 조회할 때는 JOIN이 유리
