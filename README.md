@@ -37,7 +37,7 @@ Week 2 (10/10 ~ 10/16): PCCP 기초+PCSQL 심화
 - [x] PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD
 
 Week 3 (10/17 ~ 10/23): PCSQL 
-- [x] MySQL easy, midium 난이도
+- [x] MySQL easy, medium 난이도
 - [x] PCCP 기초
 
 Week 4 (10/24 ~ 10/30): 10/30 PCSQL 시험, ADsP 이론 (수정)
@@ -47,12 +47,13 @@ Week 4 (10/24 ~ 10/30): 10/30 PCSQL 시험, ADsP 이론 (수정)
 Week 5 (10/31 ~ 11/6, PCSQL, ADsP 시험 주): PCSQL 고급, ADsP 기출, 시험 (수정)
 - [x] PCSQL 시험
 - [x] ADsP 자격검정 시험 및 복기(완료)
-- [ ] MySQL easy, midium 난이도
+- [x] MySQL easy, medium 난이도
 
 Week 6 (11/7 ~ 11/13): SQLD 대비 (JOIN, Subquery, 집합연산)
-- [] MySQL midium 난이도
-- [] SQLD 개념 3번쨰,,, 학습 
-- [] SQLD 노랭이 풀이 
+- [x] MySQL medium 난이도
+- [x] SQLD 개념 3번쨰,,, 학습 
+- [x] SQLD 노랭이 풀이 
 
 Week 7 (11/14 ~ 11/21, SQLD 시험 주): SQLD 기출 풀이, 오답 정리, 시험
-- [] 11/16 SQLD 자격검정 시험 
+- [x] 11/16 SQLD 자격검정 시험
+- [ ] 마지막 주 -> 루틴 형성 (15~30분 활용)
