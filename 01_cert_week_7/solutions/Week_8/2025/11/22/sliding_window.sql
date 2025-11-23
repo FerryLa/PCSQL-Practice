@@ -97,7 +97,7 @@ WITH ranked_orders AS ( -- WITH는 쿼리의 최상단에서 딱 한 번만 써�
         ROW_NUMBER() OVER ( -- 고객이 구매한 가장 빠른 날짜의 주문
         PARTITION BY o.user_id
         ORDER BY o.order_date, o.order_id -- 가장 빠른 날짜의 중복된 주문을 피하기 위해서
-    ) AS rn
+        ) AS rn
     FROM ORDERS o
     WHERE o.status = 'COMPLETED'
 ),
