@@ -91,20 +91,19 @@ ORDER BY l.login_date DESC;
 -- -> 다만 날짜별 집계는 바깥 셀렉트에서 윈도우함수절의 recent_login_date를 가져와야 함 << 잘못 표기해서 first_login_date로 되어있지만 수정 필요
 
 -- 복기 :
-WITH ranked_logins( -- LOGIN_HISTORY 테이블에서 모두 해결됨
+WITH ranked_logins AS (
     SELECT
-        user_id
-        MAX(login_date) recent_login_date
+        user_id,    -- 이거 또 콘마 빠졌음, 가독성 높힌건 좋은데 확실히 확인 필요 그리고, 왠만해선 별칭 AS 사용해주자
+        MAX(login_date) AS recent_login_date
     FROM LOGIN_HISTORY
     GROUP BY user_id
-)
+) AS r -- 이거 별칭 안줬음
 SELECT r.recent_login_date, COUNT(*) user_count
-FROM LOGIN_HISTORY l
-JOIN ranked_logins r ON l.user_id = r.user_id
-JOIN ORDERS o ON l.user_id = o.user_id
-WHERE r.recent_login_date >= CURDATE() - INTERVAL 14 DAY
-AND r.recent_login_date <= CURDATE()
+FROM ranked_logins
+WHERE recent_login_date BETWEEN CURDATE() - INTERVAL 14 DAY
+                            AND CURDATE()   -- 문제의 핵심은 날짜별이라 다른거 JOIN이 필요없음
 GROUP BY r.recent_login_date
 ORDER BY r.recent_login_date DESC;  --> 사실 ASC가 맞음 문제에서... ogin_date 오름차순 끝까지 틀려
 
+-- 한 줄 정리: 유저별 최신 날짜 뽑는 CTE 하나 만들고, 그걸 바로 날짜별 GROUP BY 한다. -> 중간에 쓸데없는 JOIn 넣지 말기
 -- 복기 문제 한번더 풀어보고 감잡으면 될듯. 리뷰는 그때가서 함더
