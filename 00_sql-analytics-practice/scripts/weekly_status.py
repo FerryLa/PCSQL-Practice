@@ -7,7 +7,8 @@ from datetime import datetime
 from collections import Counter
 
 # 레포 루트 기준: programmers/ 아래를 탐색
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+# (__file__) -> scripts -> 00_sql-analytics-practice 가 되도록 상위 폴더를 기준으로 삼는다.
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET_DIR = os.path.join(ROOT_DIR, "programmers")
 
 # -- Date   : YYYY-MM-DD 형식 파싱용
