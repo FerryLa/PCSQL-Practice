@@ -1,5 +1,12 @@
-# 단기 7주 플랜
-=> 01_cert_week_7 폴더
+
+<details>
+  <summary> 00_sql-analytics-practice: 프로그래머스 매일 코딩</summary>
+  
+</details>
+
+<details>
+  <summary> 01_cert_week_7 : 단기 7주 플랜 (10/2 ~ 11/21) (완료)</summary>
+
 
 ## 📅 최종 타임라인 (10/2 ~ 11/21)
 
@@ -12,7 +19,7 @@
 
 [추가]
 GitHub Actions 스크립트 자동화로 표 날짜체크 
-PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD 
+PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD
 
 ```
 
@@ -36,12 +43,25 @@ Week 2 (10/10 ~ 10/16): PCCP 기초+PCSQL 심화
 - [x] PCCP 기초
 - [x] PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD
 
-Week 3 (10/17 ~ 10/23): PCSQL 모의고사 / 시험
+Week 3 (10/17 ~ 10/23): PCSQL 
+- [x] MySQL easy, medium 난이도
+- [x] PCCP 기초
 
-Week 4 (10/24 ~ 10/30, PCSQL 시험 주): 10/30 PCSQL 시험, PCCP DFS/BFS, ADsP 이론
+Week 4 (10/24 ~ 10/30): 10/30 PCSQL 시험, ADsP 이론 (수정)
+- [x] Python 백준 문제
+- [x] SQL 시험 대비
 
-Week 5 (10/31 ~ 11/6, ADsP 시험 주): PCSQL 고급, ADsP 기출, 시험
+Week 5 (10/31 ~ 11/6, PCSQL, ADsP 시험 주): PCSQL 고급, ADsP 기출, 시험 (수정)
+- [x] PCSQL 시험
+- [x] ADsP 자격검정 시험 및 복기(완료)
+- [x] MySQL easy, medium 난이도
 
 Week 6 (11/7 ~ 11/13): SQLD 대비 (JOIN, Subquery, 집합연산)
+- [x] MySQL medium 난이도
+- [x] SQLD 개념 3번쨰,,, 학습 
+- [x] SQLD 노랭이 풀이 
 
 Week 7 (11/14 ~ 11/21, SQLD 시험 주): SQLD 기출 풀이, 오답 정리, 시험
+- [x] 11/16 SQLD 자격검정 시험
+- [X] 마지막 주 -> 루틴 형성 (15~30분 활용)
+</details>
