@@ -1,5 +1,12 @@
-# 단기 7주 플랜 (완료)
-=> 01_cert_week_7 폴더
+
+<details>
+  <summary> 00_sql-analytics-practice: 프로그래머스 매일 코딩</summary>
+  
+</details>
+
+<details>
+  <summary> 01_cert_week_7 : 단기 7주 플랜 (10/2 ~ 11/21) (완료)</summary>
+
 
 ## 📅 최종 타임라인 (10/2 ~ 11/21)
 
@@ -57,7 +64,4 @@ Week 6 (11/7 ~ 11/13): SQLD 대비 (JOIN, Subquery, 집합연산)
 Week 7 (11/14 ~ 11/21, SQLD 시험 주): SQLD 기출 풀이, 오답 정리, 시험
 - [x] 11/16 SQLD 자격검정 시험
 - [X] 마지막 주 -> 루틴 형성 (15~30분 활용)
-
-### 마무리
-- [] 코드 정규화로 불필요한 커밋, push 줄이기
-- [] 아침 루틴 계속 (15~30분 활용)
+</details>
