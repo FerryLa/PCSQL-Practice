@@ -8,4 +8,4 @@ FROM PRODUCT
 GROUP BY (FLOOR(PRICE/10000))
 ORDER BY PRICE_GROUP ASC;
 
--- 가격대별: FLOOR(나누기연산) 사용법 
+-- 가격대별: FLOOR(나누기연산) 사용법

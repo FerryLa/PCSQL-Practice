@@ -10,4 +10,4 @@ GROUP BY PRODUCT_ID
 ORDER BY PRICE DESC LIMIT 1;
 
 -- 서브쿼리와 MAX가 더 안정적
--- LEVEL 3 문제 풀기 
+-- LEVEL 3 문제 풀기
