@@ -1,7 +1,17 @@
 
 <details>
   <summary> 00_sql-analytics-practice: 프로그래머스 매일 코딩</summary>
-  
+
+  ```
+  주 일요일마다 Develop -> Main Push 및 문제 개수 추산
+  ```
+  ## 📊 Weekly SQL Solve Count
+
+  | Week     | Count | Graph      |
+  | -------- | ----- | ---------- |
+  | 2025-W48 | 2     | ██         |
+  | 2025-W49 | 9     | ██████████ |
+
 </details>
 
 <details>
