@@ -12,3 +12,4 @@ JOIN ONLINE_SALE o2
 ORDER BY o1.USER_ID ASC, o1.PRODUCT_ID DESC;
 
 -- 정석 답과 다름, 복기필요
+ 
