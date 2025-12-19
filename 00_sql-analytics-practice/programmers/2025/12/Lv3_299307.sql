@@ -10,3 +10,6 @@ SELECT ID, CASE
     END AS SIZE
 FROM ECOLI_DATA
 ORDER BY ID;
+
+-- CASE WHEN THEN ELSE END 문법은 SELECT 절에서 사용만 할 수 있는 것이 아니다. WHERE 절이나 ORDER BY 절 등에서도 사용 가능하다.
+-- 다만, GROUP BY 절에서는 사용할 수 없다.
