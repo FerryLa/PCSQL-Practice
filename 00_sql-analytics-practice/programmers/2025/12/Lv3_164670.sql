@@ -17,7 +17,4 @@ JOIN (
 ) AS B ON U.USER_ID = B.WRITER_ID
 ORDER BY USER_ID DESC;
 
--- 중고거래 게시물을 3건 등록한 사용자
--- ID, 닉네임, 주소(시,도로명 주소, 상세주소), 전화번호
--- 전화번호는 xxx-xxxx-xxxx
--- 회원ID 기준 내림차순
+-- 문자열 나누기 CONCAT으로 할 때 주의사항 -> 공백 처리 잘 하기, 그리고 SUBSTR(A, B, C), LEFT(A, B), RIGHT(A, B) 함수 잘 활용하기
