@@ -1,7 +1,7 @@
 -- Site   : Programmers
 -- Title  : 재구매가 일어난 상품과 회원 리스트 구하기 (LEVEL 2)
 -- Link   : https://school.programmers.co.kr/learn/courses/30/lessons/131536
--- Date   : 2025-12-03
+-- Date   : 2025-12-03 
 
 SELECT DISTINCT o1.USER_ID, o1.PRODUCT_ID
 FROM ONLINE_SALE o1

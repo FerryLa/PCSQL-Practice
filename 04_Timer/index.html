@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏰ 멀티 타이머</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .permission-notice {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .permission-notice.hidden {
+            display: none;
+        }
+
+        .permission-notice h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .permission-notice p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .permission-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .permission-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            color: white;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .timer-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+
+        .timer-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+        }
+
+        .timer-card.running {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            color: white;
+        }
+
+        .timer-card.completed {
+            background: linear-gradient(135deg, #51cf66 0%, #69db7c 100%);
+            color: white;
+        }
+
+        .timer-card.resting {
+            background: linear-gradient(135deg, #339af0 0%, #4dabf7 100%);
+            color: white;
+        }
+
+        .timer-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .timer-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .timer-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .timer-description {
+            font-size: 0.85em;
+            opacity: 0.75;
+        }
+
+        .timer-card.running .timer-description,
+        .timer-card.completed .timer-description,
+        .timer-card.resting .timer-description {
+            opacity: 0.9;
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: 700;
+            text-align: center;
+            margin: 25px 0;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        .phase-indicator {
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 20px;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .timer-card.running .phase-indicator,
+        .timer-card.resting .phase-indicator {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .time-control {
+            margin: 20px 0;
+        }
+
+        .time-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .current-value {
+            font-weight: 700;
+            font-size: 1.05em;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        .time-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .timer-card.running .time-slider,
+        .timer-card.resting .time-slider {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .time-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+        }
+
+        .time-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .timer-card.running .time-slider::-webkit-slider-thumb,
+        .timer-card.resting .time-slider::-webkit-slider-thumb {
+            background: white;
+        }
+
+        .timer-card.running .time-slider::-moz-range-thumb,
+        .timer-card.resting .time-slider::-moz-range-thumb {
+            background: white;
+        }
+
+        .quick-adjust {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .quick-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: rgba(102, 126, 234, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .quick-btn:active {
+            transform: translateY(0);
+        }
+
+        .timer-card.running .quick-btn,
+        .timer-card.resting .quick-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .timer-card.running .quick-btn:hover,
+        .timer-card.resting .quick-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .timer-info {
+            text-align: center;
+            font-size: 0.85em;
+            margin: 15px 0;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-start {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-pause {
+            background: #ffd43b;
+            color: #333;
+        }
+
+        .btn-reset {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .global-controls {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 40px;
+        }
+
+        .global-title {
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .global-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .global-btn {
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .global-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+
+        .global-btn:active {
+            transform: translateY(0);
+        }
+
+        .notification {
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transition: top 0.4s ease;
+            min-width: 320px;
+            max-width: 500px;
+        }
+
+        .notification.show {
+            top: 30px;
+        }
+
+        .notification-title {
+            font-weight: 700;
+            font-size: 1.15em;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .notification-message {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .notification.success {
+            border-left: 4px solid #51cf66;
+        }
+
+        .notification.info {
+            border-left: 4px solid #339af0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 15px;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin-bottom: 30px;
+            }
+
+            .timers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timer-display {
+                font-size: 2.5em;
+            }
+
+            .global-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏰ 멀티 타이머</h1>
+
+        <div id="permissionNotice" class="permission-notice">
+            <h3>🔔 알림 권한이 필요합니다</h3>
+            <p>타이머 완료 시 시스템 알림을 받으려면 알림 권한을 허용해주세요.</p>
+            <button class="permission-btn" onclick="requestNotificationPermission()">알림 권한 허용하기</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">⏱️ 단순 타이머</div>
+            <div class="timers-grid">
+                <!-- 밤짓기 -->
+                <div id="timer1" class="timer-card">
+                    <div class="timer-header">
+                        <div class="timer-icon">🍚</div>
+                        <div class="timer-title">밥짓기</div>
+                        <div class="timer-description">간단한 가정 요리</div>
+                    </div>
+                    <div class="timer-display" id="display1">40:00</div>
+                    
+                    <div class="time-control">
+                        <div class="time-label">
+                            <span>⏱️ 시간 조절</span>
+                            <span class="current-value" id="sliderValue1">40분</span>
+                        </div>
+                        <input type="range" class="time-slider" id="slider1" min="5" max="7200" step="5" value="2400">
+                        <div class="quick-adjust">
+                            <button class="quick-btn" onclick="quickAdjust(1, -300)">-5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(1, -60)">-1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(1, 60)">+1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(1, 300)">+5분</button>
+                        </div>
+                    </div>
+
+                    <div class="timer-info">
+                        <span id="status1">일시정지</span> • 40분
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" onclick="startTimer(1)">시작</button>
+                        <button class="btn btn-pause" onclick="pauseTimer(1)">일시정지</button>
+                        <button class="btn btn-reset" onclick="resetTimer(1)">초기화</button>
+                    </div>
+                </div>
+
+                <!-- 빨래 -->
+                <div id="timer2" class="timer-card">
+                    <div class="timer-header">
+                        <div class="timer-icon">🧺</div>
+                        <div class="timer-title">빨래</div>
+                        <div class="timer-description">표준 세탁 코스</div>
+                    </div>
+                    <div class="timer-display" id="display2">120:00</div>
+                    
+                    <div class="time-control">
+                        <div class="time-label">
+                            <span>⏱️ 시간 조절</span>
+                            <span class="current-value" id="sliderValue2">120분</span>
+                        </div>
+                        <input type="range" class="time-slider" id="slider2" min="5" max="14400" step="5" value="7200">
+                        <div class="quick-adjust">
+                            <button class="quick-btn" onclick="quickAdjust(2, -600)">-10분</button>
+                            <button class="quick-btn" onclick="quickAdjust(2, -300)">-5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(2, 300)">+5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(2, 600)">+10분</button>
+                        </div>
+                    </div>
+
+                    <div class="timer-info">
+                        <span id="status2">일시정지</span> • 120분
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" onclick="startTimer(2)">시작</button>
+                        <button class="btn btn-pause" onclick="pauseTimer(2)">일시정지</button>
+                        <button class="btn btn-reset" onclick="resetTimer(2)">초기화</button>
+                    </div>
+                </div>
+
+                <!-- 휴식시간 -->
+                <div id="timer3" class="timer-card">
+                    <div class="timer-header">
+                        <div class="timer-icon">☕</div>
+                        <div class="timer-title">휴식시간</div>
+                        <div class="timer-description">잠깐 쉬기</div>
+                    </div>
+                    <div class="timer-display" id="display3">10:00</div>
+                    
+                    <div class="time-control">
+                        <div class="time-label">
+                            <span>⏱️ 시간 조절</span>
+                            <span class="current-value" id="sliderValue3">10분</span>
+                        </div>
+                        <input type="range" class="time-slider" id="slider3" min="5" max="3600" step="5" value="600">
+                        <div class="quick-adjust">
+                            <button class="quick-btn" onclick="quickAdjust(3, -60)">-1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(3, -30)">-30초</button>
+                            <button class="quick-btn" onclick="quickAdjust(3, 30)">+30초</button>
+                            <button class="quick-btn" onclick="quickAdjust(3, 60)">+1분</button>
+                        </div>
+                    </div>
+
+                    <div class="timer-info">
+                        <span id="status3">일시정지</span> • 10분
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" onclick="startTimer(3)">시작</button>
+                        <button class="btn btn-pause" onclick="pauseTimer(3)">일시정지</button>
+                        <button class="btn btn-reset" onclick="resetTimer(3)">초기화</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🔄 사이클 타이머</div>
+            <div class="timers-grid">
+                <!-- 뽀모도로 -->
+                <div id="timer4" class="timer-card">
+                    <div class="timer-header">
+                        <div class="timer-icon">🍅</div>
+                        <div class="timer-title">뽀모도로</div>
+                        <div class="timer-description">25분 집중 + 5분 휴식</div>
+                    </div>
+                    <div class="phase-indicator">
+                        <span id="phase4">집중 단계</span>
+                    </div>
+                    <div class="timer-display" id="display4">25:00</div>
+                    
+                    <div class="time-control">
+                        <div class="time-label">
+                            <span>⏱️ 시간 조절</span>
+                            <span class="current-value" id="sliderValue4">25분</span>
+                        </div>
+                        <input type="range" class="time-slider" id="slider4" min="5" max="3600" step="5" value="1500">
+                        <div class="quick-adjust">
+                            <button class="quick-btn" onclick="quickAdjust(4, -300)">-5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(4, -60)">-1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(4, 60)">+1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(4, 300)">+5분</button>
+                        </div>
+                    </div>
+
+                    <div class="timer-info">
+                        <span id="status4">일시정지</span> • 25분 → 5분
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" onclick="startTimer(4)">시작</button>
+                        <button class="btn btn-pause" onclick="pauseTimer(4)">일시정지</button>
+                        <button class="btn btn-reset" onclick="resetTimer(4)">초기화</button>
+                    </div>
+                </div>
+
+                <!-- 울트라디안 리듬 -->
+                <div id="timer5" class="timer-card">
+                    <div class="timer-header">
+                        <div class="timer-icon">🌸</div>
+                        <div class="timer-title">울트라디안 리듬</div>
+                        <div class="timer-description">90분 집중 + 20분 휴식</div>
+                    </div>
+                    <div class="phase-indicator">
+                        <span id="phase5">집중 단계</span>
+                    </div>
+                    <div class="timer-display" id="display5">90:00</div>
+                    
+                    <div class="time-control">
+                        <div class="time-label">
+                            <span>⏱️ 시간 조절</span>
+                            <span class="current-value" id="sliderValue5">90분</span>
+                        </div>
+                        <input type="range" class="time-slider" id="slider5" min="5" max="7200" step="5" value="5400">
+                        <div class="quick-adjust">
+                            <button class="quick-btn" onclick="quickAdjust(5, -600)">-10분</button>
+                            <button class="quick-btn" onclick="quickAdjust(5, -300)">-5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(5, 300)">+5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(5, 600)">+10분</button>
+                        </div>
+                    </div>
+
+                    <div class="timer-info">
+                        <span id="status5">일시정지</span> • 90분 → 20분
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" onclick="startTimer(5)">시작</button>
+                        <button class="btn btn-pause" onclick="pauseTimer(5)">일시정지</button>
+                        <button class="btn btn-reset" onclick="resetTimer(5)">초기화</button>
+                    </div>
+                </div>
+
+                <!-- 52-17 기법 -->
+                <div id="timer6" class="timer-card">
+                    <div class="timer-header">
+                        <div class="timer-icon">📚</div>
+                        <div class="timer-title">52-17 기법</div>
+                        <div class="timer-description">52분 집중 + 17분 휴식</div>
+                    </div>
+                    <div class="phase-indicator">
+                        <span id="phase6">집중 단계</span>
+                    </div>
+                    <div class="timer-display" id="display6">52:00</div>
+                    
+                    <div class="time-control">
+                        <div class="time-label">
+                            <span>⏱️ 시간 조절</span>
+                            <span class="current-value" id="sliderValue6">52분</span>
+                        </div>
+                        <input type="range" class="time-slider" id="slider6" min="5" max="7200" step="5" value="3120">
+                        <div class="quick-adjust">
+                            <button class="quick-btn" onclick="quickAdjust(6, -300)">-5분</button>
+                            <button class="quick-btn" onclick="quickAdjust(6, -60)">-1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(6, 60)">+1분</button>
+                            <button class="quick-btn" onclick="quickAdjust(6, 300)">+5분</button>
+                        </div>
+                    </div>
+
+                    <div class="timer-info">
+                        <span id="status6">일시정지</span> • 52분 → 17분
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" onclick="startTimer(6)">시작</button>
+                        <button class="btn btn-pause" onclick="pauseTimer(6)">일시정지</button>
+                        <button class="btn btn-reset" onclick="resetTimer(6)">초기화</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="global-controls">
+            <div class="global-title">⚙️ 전체 제어</div>
+            <div class="global-buttons">
+                <button class="global-btn btn-start" onclick="startAllTimers()">전체 시작</button>
+                <button class="global-btn btn-pause" onclick="pauseAllTimers()">전체 일시정지</button>
+                <button class="global-btn btn-reset" onclick="resetAllTimers()">전체 초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">
+        <div class="notification-title" id="notificationTitle">알림</div>
+        <div class="notification-message" id="notificationMessage">메시지</div>
+    </div>
+
+    <script>
+        // 타이머 설정
+        const timerConfigs = {
+            1: { name: '밥짓기', type: 'simple', total: 40 * 60 },
+            2: { name: '빨래', type: 'simple', total: 120 * 60 },
+            3: { name: '휴식시간', type: 'simple', total: 10 * 60 },
+            4: { name: '뽀모도로', type: 'cycle', focus: 25 * 60, rest: 5 * 60 },
+            5: { name: '울트라디안 리듬', type: 'cycle', focus: 90 * 60, rest: 20 * 60 },
+            6: { name: '52-17 기법', type: 'cycle', focus: 52 * 60, rest: 17 * 60 }
+        };
+
+        // 타이머 상태
+        const timers = {
+            1: { remaining: 40 * 60, isRunning: false, interval: null },
+            2: { remaining: 120 * 60, isRunning: false, interval: null },
+            3: { remaining: 10 * 60, isRunning: false, interval: null },
+            4: { remaining: 25 * 60, isRunning: false, interval: null, phase: 'focus' },
+            5: { remaining: 90 * 60, isRunning: false, interval: null, phase: 'focus' },
+            6: { remaining: 52 * 60, isRunning: false, interval: null, phase: 'focus' }
+        };
+
+        // 알림 아이콘 생성
+        function createNotificationIcon() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#667eea';
+            ctx.beginPath();
+            ctx.arc(64, 64, 60, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(64, 64, 45, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(64, 64);
+            ctx.lineTo(64, 35);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(64, 64);
+            ctx.lineTo(85, 64);
+            ctx.stroke();
+            
+            return canvas.toDataURL();
+        }
+
+        const notificationIcon = createNotificationIcon();
+
+        // 알림 권한 요청 함수
+        async function requestNotificationPermission() {
+            console.log('🔔 알림 권한 요청 시작');
+            
+            if (!('Notification' in window)) {
+                alert('이 브라우저는 알림을 지원하지 않습니다.');
+                return false;
+            }
+            
+            try {
+                const permission = await Notification.requestPermission();
+                console.log('알림 권한 응답:', permission);
+                
+                if (permission === 'granted') {
+                    console.log('✅ 알림 권한 허용됨!');
+                    document.getElementById('permissionNotice').classList.add('hidden');
+                    
+                    // 테스트 알림
+                    try {
+                        const testNotif = new Notification('알림 설정 완료! 🎉', {
+                            body: '타이머가 완료되면 이런 알림을 받게 됩니다.',
+                            icon: notificationIcon,
+                            tag: 'permission-granted',
+                            requireInteraction: false
+                        });
+                        setTimeout(() => testNotif.close(), 3000);
+                    } catch (e) {
+                        console.error('테스트 알림 실패:', e);
+                    }
+                    return true;
+                } else if (permission === 'denied') {
+                    alert('알림이 차단되었습니다.\n\n브라우저 주소창 왼쪽의 자물쇠/정보 아이콘을 클릭하여\n"알림" 설정을 "허용"으로 변경해주세요.');
+                    return false;
+                } else {
+                    alert('알림 권한이 거부되었습니다.');
+                    return false;
+                }
+            } catch (err) {
+                console.error('알림 권한 요청 오류:', err);
+                alert('알림 권한 요청 중 오류가 발생했습니다: ' + err.message);
+                return false;
+            }
+        }
+
+        // 알림 권한 상태 확인
+        function checkNotificationPermission() {
+            const notice = document.getElementById('permissionNotice');
+            
+            if (!('Notification' in window)) {
+                console.log('❌ 브라우저가 알림을 지원하지 않습니다.');
+                notice.innerHTML = '<h3>❌ 알림 미지원</h3><p>이 브라우저는 시스템 알림을 지원하지 않습니다.</p>';
+                return;
+            }
+            
+            console.log('현재 알림 권한:', Notification.permission);
+            
+            if (Notification.permission === 'granted') {
+                console.log('✅ 알림 권한이 이미 허용되어 있습니다.');
+                notice.classList.add('hidden');
+            } else if (Notification.permission === 'denied') {
+                console.log('❌ 알림 권한이 차단되어 있습니다.');
+                notice.innerHTML = '<h3>⚠️ 알림이 차단되었습니다</h3><p>브라우저 주소창 왼쪽의 자물쇠/정보 아이콘을 클릭하여<br>"알림" 설정을 "허용"으로 변경해주세요.</p>';
+            } else {
+                console.log('⏳ 알림 권한을 아직 요청하지 않았습니다.');
+                // default 상태 - 버튼 표시
+            }
+        }
+
+        // 알림음
+        function playNotificationSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // 시간 포맷팅
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // 슬라이더 값 업데이트
+        function updateSlider(id) {
+            const slider = document.getElementById(`slider${id}`);
+            const sliderValue = document.getElementById(`sliderValue${id}`);
+            
+            slider.value = timers[id].remaining;
+            
+            const mins = Math.floor(timers[id].remaining / 60);
+            const secs = timers[id].remaining % 60;
+            
+            if (mins > 0 && secs > 0) {
+                sliderValue.textContent = `${mins}분 ${secs}초`;
+            } else if (mins > 0) {
+                sliderValue.textContent = `${mins}분`;
+            } else {
+                sliderValue.textContent = `${secs}초`;
+            }
+        }
+
+        // 슬라이더 리스너
+        function setupSliderListeners() {
+            [1, 2, 3, 4, 5, 6].forEach(id => {
+                const slider = document.getElementById(`slider${id}`);
+                slider.addEventListener('input', function() {
+                    // 실행 중에도 시간 조절 가능
+                    timers[id].remaining = parseInt(this.value);
+                    updateDisplay(id);
+                    updateSlider(id);
+                });
+            });
+        }
+
+        // 빠른 조절
+        function quickAdjust(id, seconds) {
+            // 실행 중에도 조절 가능
+            const slider = document.getElementById(`slider${id}`);
+            const maxTime = parseInt(slider.max);
+            const minTime = 5; // 최소 5초
+            
+            let newTime = timers[id].remaining + seconds;
+            timers[id].remaining = Math.max(minTime, Math.min(newTime, maxTime));
+            
+            updateDisplay(id);
+            updateSlider(id);
+        }
+
+        // 디스플레이 업데이트
+        function updateDisplay(id) {
+            const display = document.getElementById(`display${id}`);
+            const status = document.getElementById(`status${id}`);
+            const card = document.getElementById(`timer${id}`);
+            
+            display.textContent = formatTime(timers[id].remaining);
+            
+            // 사이클 타이머 단계 표시
+            if (timerConfigs[id].type === 'cycle') {
+                const phaseElement = document.getElementById(`phase${id}`);
+                if (phaseElement) {
+                    phaseElement.textContent = timers[id].phase === 'focus' ? '집중 단계' : '휴식 단계';
+                }
+            }
+            
+            // 카드 상태
+            if (timers[id].remaining === 0 && !timers[id].isRunning) {
+                status.textContent = '완료';
+                card.classList.add('completed');
+                card.classList.remove('running', 'resting');
+            } else if (timers[id].isRunning) {
+                if (timerConfigs[id].type === 'cycle' && timers[id].phase === 'rest') {
+                    status.textContent = '휴식중';
+                    card.classList.add('resting');
+                    card.classList.remove('running', 'completed');
+                } else {
+                    status.textContent = '진행중';
+                    card.classList.add('running');
+                    card.classList.remove('completed', 'resting');
+                }
+            } else {
+                status.textContent = '일시정지';
+                card.classList.remove('running', 'completed', 'resting');
+            }
+        }
+
+        // 버튼 상태
+        function updateButtons(id) {
+            const card = document.getElementById(`timer${id}`);
+            const buttons = card.querySelectorAll('.btn');
+            const startBtn = buttons[0];
+            const pauseBtn = buttons[1];
+            
+            if (timers[id].isRunning) {
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+            } else {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+            }
+        }
+
+        // 알림 표시
+        async function showNotification(title, message, type = 'success') {
+            console.log('📢 알림 호출:', title, message);
+            
+            // 페이지 내 알림
+            const notificationDiv = document.getElementById('notification');
+            document.getElementById('notificationTitle').textContent = title;
+            document.getElementById('notificationMessage').textContent = message;
+            notificationDiv.className = `notification show ${type}`;
+            
+            notificationDiv.onclick = () => notificationDiv.classList.remove('show');
+            setTimeout(() => notificationDiv.classList.remove('show'), 5000);
+            
+            // 알림음 재생
+            try { 
+                playNotificationSound();
+                console.log('🔊 알림음 재생');
+            } catch (e) {
+                console.log('❌ 알림음 재생 실패:', e);
+            }
+            
+            // 진동 (모바일)
+            if ('vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200]);
+                console.log('📳 진동 실행');
+            }
+            
+            // 시스템 알림
+            console.log('🔔 시스템 알림 체크...');
+            console.log('  - Notification 지원:', 'Notification' in window);
+            console.log('  - 권한 상태:', Notification.permission);
+            
+            if (!('Notification' in window)) {
+                console.log('❌ 브라우저가 알림을 지원하지 않습니다.');
+                return;
+            }
+            
+            if (Notification.permission !== 'granted') {
+                console.log('❌ 알림 권한이 없습니다. 현재 상태:', Notification.permission);
+                console.log('💡 페이지 상단의 "알림 권한 허용하기" 버튼을 클릭해주세요.');
+                return;
+            }
+            
+            try {
+                console.log('⏳ 시스템 알림 생성 시도...');
+                
+                // 알림 생성 전 권한 재확인
+                if (Notification.permission !== 'granted') {
+                    console.log('❌ 알림 생성 직전 권한 체크 실패');
+                    return;
+                }
+                
+                const notification = new Notification(title, {
+                    body: message,
+                    icon: notificationIcon,
+                    badge: notificationIcon,
+                    requireInteraction: true,
+                    tag: `timer-${Date.now()}`,
+                    silent: false,
+                    vibrate: [200, 100, 200],
+                    renotify: true
+                });
+                
+                console.log('✅ 시스템 알림 객체 생성 성공!');
+                
+                // 이벤트 핸들러 등록
+                notification.onshow = () => {
+                    console.log('👀 알림이 화면에 표시됨');
+                };
+                
+                notification.onclick = () => {
+                    console.log('👆 알림 클릭됨');
+                    window.focus();
+                    notification.close();
+                };
+                
+                notification.onerror = (e) => {
+                    console.error('❌ 알림 표시 오류:', e);
+                };
+                
+                notification.onclose = () => {
+                    console.log('🚪 알림이 닫힘');
+                };
+                
+                // 알림이 제대로 생성되었는지 확인
+                await new Promise(resolve => setTimeout(resolve, 100));
+                console.log('✅ 알림 처리 완료');
+                
+            } catch (e) {
+                console.error('❌ 시스템 알림 생성 실패:', e);
+                console.error('  - 에러 이름:', e.name);
+                console.error('  - 에러 메시지:', e.message);
+                console.error('  - 에러 스택:', e.stack);
+            }
+        }
+
+        // 타이머 시작
+        function startTimer(id) {
+            if (timers[id].isRunning) return;
+            
+            timers[id].isRunning = true;
+            updateButtons(id);
+            updateDisplay(id);
+            
+            timers[id].interval = setInterval(() => {
+                timers[id].remaining--;
+                updateDisplay(id);
+                updateSlider(id);
+                
+                if (timers[id].remaining === 0) {
+                    if (timerConfigs[id].type === 'cycle') {
+                        if (timers[id].phase === 'focus') {
+                            timers[id].phase = 'rest';
+                            timers[id].remaining = timerConfigs[id].rest;
+                            
+                            const slider = document.getElementById(`slider${id}`);
+                            slider.max = timerConfigs[id].rest;
+                            
+                            showNotification(
+                                `${timerConfigs[id].name} - 집중 완료!`,
+                                `휴식 시간이 시작됩니다 (${Math.floor(timerConfigs[id].rest / 60)}분)`,
+                                'info'
+                            );
+                            updateDisplay(id);
+                            updateSlider(id);
+                        } else {
+                            clearInterval(timers[id].interval);
+                            timers[id].isRunning = false;
+                            updateButtons(id);
+                            showNotification(
+                                `${timerConfigs[id].name} - 사이클 완료!`,
+                                '한 사이클이 완료되었습니다.'
+                            );
+                        }
+                    } else {
+                        clearInterval(timers[id].interval);
+                        timers[id].isRunning = false;
+                        updateButtons(id);
+                        showNotification(
+                            `${timerConfigs[id].name} 완료!`,
+                            `${timerConfigs[id].name} 타이머가 종료되었습니다.`
+                        );
+                    }
+                }
+            }, 1000);
+        }
+
+        // 타이머 일시정지
+        function pauseTimer(id) {
+            if (!timers[id].isRunning) return;
+            
+            clearInterval(timers[id].interval);
+            timers[id].isRunning = false;
+            updateButtons(id);
+            updateDisplay(id);
+        }
+
+        // 타이머 초기화
+        function resetTimer(id) {
+            clearInterval(timers[id].interval);
+            timers[id].isRunning = false;
+            
+            if (timerConfigs[id].type === 'cycle') {
+                timers[id].phase = 'focus';
+                timers[id].remaining = timerConfigs[id].focus;
+                
+                const slider = document.getElementById(`slider${id}`);
+                slider.max = timerConfigs[id].focus;
+            } else {
+                timers[id].remaining = timerConfigs[id].total;
+            }
+            
+            updateDisplay(id);
+            updateButtons(id);
+            updateSlider(id);
+            
+            const card = document.getElementById(`timer${id}`);
+            card.classList.remove('running', 'completed', 'resting');
+        }
+
+        // 전체 제어
+        function startAllTimers() {
+            [1, 2, 3, 4, 5, 6].forEach(id => startTimer(id));
+        }
+
+        function pauseAllTimers() {
+            [1, 2, 3, 4, 5, 6].forEach(id => pauseTimer(id));
+        }
+
+        function resetAllTimers() {
+            [1, 2, 3, 4, 5, 6].forEach(id => resetTimer(id));
+        }
+
+        // 초기화
+        [1, 2, 3, 4, 5, 6].forEach(id => {
+            updateDisplay(id);
+            updateButtons(id);
+            updateSlider(id);
+        });
+
+        setupSliderListeners();
+
+        // 페이지 로드 시 알림 권한 상태 확인
+        window.addEventListener('load', () => {
+            checkNotificationPermission();
+        });
+    </script>
+</body>
+</html>
