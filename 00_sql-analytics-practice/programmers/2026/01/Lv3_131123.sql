@@ -1,0 +1,17 @@
+-- Site   : Programmers
+-- Title  : 즐겨찾기가 가장 많은 식당 정보 출력하기 (LEVEL 3)
+-- Link   : https://school.programmers.co.kr/learn/courses/30/lessons/131123
+-- Date   : 2026-01-01
+
+
+SELECT R.FOOD_TYPE, R.REST_ID, R.REST_NAME, R.FAVORITES
+FROM REST_INFO R
+JOIN (
+SELECT FOOD_TYPE, MAX(FAVORITES)
+FROM REST_INFO
+GROUP BY FOOD_TYPE
+) AS M ON R.FOOD_TYPE = M.FOOD_TYPE
+    AND R.FAVORITES = M.MAX(FAVORITES)
+ORDER BY R.FOOD_TYPE DESC;
+
+-- 랭킹 윈도우함수 사용 가능 : ROW_NUMBER() OVER (PARTITION BY RANKING ORDER BY REST_ID) AS RN
