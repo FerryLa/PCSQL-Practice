@@ -18,4 +18,4 @@ FROM ECOLI_DATA E
 JOIN MAX_BY_YEAR M ON YEAR(E.DIFFERENTIATION_DATE) = M.YEAR
 ORDER BY M.YEAR, YEAR_DEV
 
--- 윈도우 함수를 사용해 구했고, MAX_BY_YEAR로 나머지 사이즈를 뺄 생각을 하지 못했음
+-- 윈도우 함수를 사용해 구했지만 더 간편한 답이 있고, MAX_BY_YEAR로 나머지 사이즈를 뺄 생각을 하지 못했음 / 복기필요
