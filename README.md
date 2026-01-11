@@ -1,82 +1,89 @@
+# PCSQL-PRACTICE
 
 <details>
-  <summary> 00_sql-analytics-practice: 프로그래머스 매일 코딩</summary>
+<summary>월별 달력 일정표</summary>
 
-  ```
-  주 일요일마다 Develop -> Main Push 및 문제 개수 추산
-  ```
-  ## 📊 Weekly SQL Solve Count
+### 🗓️ 2026년 1월
 
-   W51주차 복기 : [다각적&애자일 방식] 52주차는 시간을 정해두고 시간 범위 안에서 최대한 풀 수 있는 문제를 푼다. 사이클은 Lv1, Lv2, Lv3으로 한다.
+| 일 | 월 | 화 | 수 | 목 | 금 | 토 |
+| :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+|     |     |     | 1   | 2   | 3   | 4   |
+| 5   | 6   | 7   | 8   | 9   | 10  | 11  |
+| 12  | 13  | 14  | 15  | 16  | 17  | 18  |
+| 19  | 20  | 21  | 22  | 23  | 24  | 25  |
+| 26  | 27  | 28  | 29  | 30  | 31  |     |
 
-  | Week      | Count | Graph        |
-  |-----------|-------|--------------|
-  | 2025-W48 |     2 | ██           |
-  | 2025-W49 |     9 | ██████████   |
-  | 2025-W50 |     9 | ██████████   |
-  | 2025-W51 |     7 | ███████      |
+**주요 일정:**
+- 1월 6–9: CES 2026 (라스베이거스)
+- 1월 19–23: WEF 2026 (다보스)
+- 1월 20–27: AAAI-26 (싱가포르)
 
+---
+
+### 🗓️ 2026년 2월
+
+| 일 | 월 | 화 | 수 | 목 | 금 | 토 |
+| :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| 1   | 2   | 3   | 4   | 5   | 6   | 7   |
+| 8   | 9   | 10  | 11  | 12  | 13  | 14  |
+| 15  | 16  | 17  | 18  | 19  | 20  | 21  |
+| 22  | 23  | 24  | 25  | 26  | 27  | 28  |
+
+**주요 일정:**
+- 2월 2–6: SQLD, SQLP 원서접수
+- 2월 5–6: NFT Paris 2026 (유럽 Web3 행사)
+- 2월 7: ADsP, ADP 필기시험
+- 2월 9–10: Global AI Show (리야드)
+- 2월 11–12: Consensus Hong Kong
+- 2월 14–15: AICE 자격시험
+- 2월 17–21: ETHDenver 2026 (이더리움 해커톤)
 
 </details>
 
 <details>
-  <summary> 01_cert_week_7 : 단기 7주 플랜 (10/2 ~ 11/21) (완료)</summary>
+<summary>프로그래머스 일일 코딩</summary>
 
+### 📊 프로그래머스 코딩 집계 (자동 업데이트)
 
-## 📅 최종 타임라인 (10/2 ~ 11/21)
+| 년/월 | 문제 풀이 수 |
+| :---: | :----------: |
+| 2026-01 | 32 |
+| 2026-02 | 18 |
+| 2026-03 | 25 |
 
-```
-10/2: 시작 & 루틴 마무리 (레포 세팅, README 작성, 적립 시스템 기록)
-10/23: PCSQL 시험
-11/2: ADsP 시험
-11/16: SQLD 시험
-11/21: 프로젝트·학습 최종 마감
+> 매주 일요일 오전 9시 GitHub Action을 통해 자동 집계됩니다.
 
-[추가]
-GitHub Actions 스크립트 자동화로 표 날짜체크 
-PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD
-
-```
-
-### ✅ Week 1 (10/3 ~ 10/9)
-
-- [x] GitHub Actions + 스크립트로 README 자동 수정 커밋 (깃허브 액션 연습)  
-- 01_cert_week_7/README.md 파일 내용 하단에 자동 스케줄 체크
-
-- [x] PCCP Lv.1 Python: 조건문/반복문/리스트/문자열 (매일 1문제)
-
-- [x] PCSQL: SELECT, WHERE, JOIN 기초 (주 3일)
-
-- [x] GitHub 업로드: Week_1/problemX.py, Week_1/problemY.sql
-
-- [x] 오답노트: Week_1/review.md
-
-### ✅ 주차별 흐름 (요약)
-
-Week 2 (10/10 ~ 10/16): PCCP 기초+PCSQL 심화
-
-- [x] PCCP 기초
-- [x] PostgreSQL 엔진 구축 및 스키마 관리, DB CRUD
-
-Week 3 (10/17 ~ 10/23): PCSQL 
-- [x] MySQL easy, medium 난이도
-- [x] PCCP 기초
-
-Week 4 (10/24 ~ 10/30): 10/30 PCSQL 시험, ADsP 이론 (수정)
-- [x] Python 백준 문제
-- [x] SQL 시험 대비
-
-Week 5 (10/31 ~ 11/6, PCSQL, ADsP 시험 주): PCSQL 고급, ADsP 기출, 시험 (수정)
-- [x] PCSQL 시험
-- [x] ADsP 자격검정 시험 및 복기(완료)
-- [x] MySQL easy, medium 난이도
-
-Week 6 (11/7 ~ 11/13): SQLD 대비 (JOIN, Subquery, 집합연산)
-- [x] MySQL medium 난이도
-- [x] SQLD 개념 3번쨰,,, 학습 
-- [x] SQLD 노랭이 풀이 
-
-Week 7 (11/14 ~ 11/21, SQLD 시험 주): SQLD 기출 풀이, 오답 정리, 시험
-- [x] 11/16 SQLD 자격검정 시험
-- [X] 마지막 주 -> 루틴 형성 (15~30분 활용)
 </details>
+
+---
+
+## 프로젝트 개요
+**PCSQL-PRACTICE**는 매일 SQL 학습 습관을 통해 쿼리 역량을 강화하고,  
+PostgreSQL DB 구축 경험과 Timer, Calender 등 다양한 아이디어를 실험하는 GitHub Tools 모음입니다.
+
+- **SQL Analytics Practice (00_sql-analytics-practice)**  
+  프로그래머스 일일 코딩 문제 풀이 및 자동화 스크립트 관리
+
+- **Certification Plan (01_cert_week_7)**  
+  단기 7주 플랜 학습 기록
+
+- **PostgreSQL / MySQL (02_postgresq1, 03_mysql)**  
+  데이터베이스 구축 및 실습
+
+- **Timer & Calendar (04_timer, 05_calender)**  
+  일정 관리 및 자동화 달력 생성
+
+- **Dual Translation (06_dual_translation)**  
+  번역 및 데이터 처리 실험
+
+---
+
+## 🚀 실행 방법
+
+1. **프로그래머스 일일 코딩 자동화**
+   - `00_sql-analytics-practice` 폴더 내 스크립트 실행
+   - GitHub Action이 자동으로 주간 집계 수행
+
+2. **월별 달력 일정표**
+   - `05_calender` 폴더 내 달력 스크립트 실행
+   - README.md에 8주간 달력 자동 반영

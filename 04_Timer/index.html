@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⏰ 멀티 타이머</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏰</text></svg>">
     <style>
         * {
             margin: 0;
@@ -1054,8 +1055,26 @@
             
             timers[id].interval = setInterval(() => {
                 timers[id].remaining--;
-                updateDisplay(id);
-                updateSlider(id);
+                
+                // 디스플레이만 업데이트 (더 가벼움)
+                const display = document.getElementById(`display${id}`);
+                display.textContent = formatTime(timers[id].remaining);
+                
+                // 슬라이더는 매 초마다 업데이트 (무겁지 않음)
+                const slider = document.getElementById(`slider${id}`);
+                slider.value = timers[id].remaining;
+                
+                // 슬라이더 값 표시 업데이트
+                const sliderValue = document.getElementById(`sliderValue${id}`);
+                const mins = Math.floor(timers[id].remaining / 60);
+                const secs = timers[id].remaining % 60;
+                if (mins > 0 && secs > 0) {
+                    sliderValue.textContent = `${mins}분 ${secs}초`;
+                } else if (mins > 0) {
+                    sliderValue.textContent = `${mins}분`;
+                } else {
+                    sliderValue.textContent = `${secs}초`;
+                }
                 
                 if (timers[id].remaining === 0) {
                     if (timerConfigs[id].type === 'cycle') {
@@ -1063,7 +1082,6 @@
                             timers[id].phase = 'rest';
                             timers[id].remaining = timerConfigs[id].rest;
                             
-                            const slider = document.getElementById(`slider${id}`);
                             slider.max = timerConfigs[id].rest;
                             
                             showNotification(
@@ -1077,6 +1095,7 @@
                             clearInterval(timers[id].interval);
                             timers[id].isRunning = false;
                             updateButtons(id);
+                            updateDisplay(id);
                             showNotification(
                                 `${timerConfigs[id].name} - 사이클 완료!`,
                                 '한 사이클이 완료되었습니다.'
@@ -1086,6 +1105,7 @@
                         clearInterval(timers[id].interval);
                         timers[id].isRunning = false;
                         updateButtons(id);
+                        updateDisplay(id);
                         showNotification(
                             `${timerConfigs[id].name} 완료!`,
                             `${timerConfigs[id].name} 타이머가 종료되었습니다.`
