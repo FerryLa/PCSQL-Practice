@@ -75,6 +75,8 @@
 
 </details>
 
+- **SQL Analytics Practice (00_sql-analytics-practice)**  
+  프로그래머스 일일 코딩 문제 풀이 및 자동화 스크립트 관리
 
 ---
 
