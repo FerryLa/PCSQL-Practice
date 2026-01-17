@@ -10,7 +10,7 @@
 ```
 07_Daily_ecommerce_planning_challenge/
 ├── 1_Daily_Records/          # 일별 기획 파일 (day01 ~ day100)
-├── 2_Weekly_Summary/          # 주간 회고 (week01 ~ week14)
+├── 2_30day_Summary/          # 30일 회고 (30일, 60일, 90일) #  2_Weekly_Summary/  # 주간 회고 (week01 ~ week14)
 ├── 3_Idea_Pool/               # 아이디어 풀 (ideas.txt, used_ideas.txt)
 ├── 4_Portfolio_Drafts/        # 포트폴리오 초안 (베스트 기획 모음)
 ├── 5_Final_Portfolio/         # 최종 포트폴리오 (Top 10 정리)
@@ -43,7 +43,8 @@ bash run_today.sh
 7. 오늘의 기획자 인사이트
 
 ### 3. 30일 회고 (선택)
-매 30일마다 `2_Weekly_Summary/XXday.md`에 학습 내용과 변화를 기록하고 정리합니다.
+<!-- 매 주마다 `2_Weekly_Summary/XXday.md`에 학습 내용과 변화를 기록하고 정리합니다. -->
+ 매 30일마다 `2_30day_Summary`에 학습 내용과 변화를 기록하고 정리합니다.
 
 ### 4. 포트폴리오 준비 (80일차 이후)
 - 베스트 기획 10개를 `4_Portfolio_Drafts/`에서 다듬기
