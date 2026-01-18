@@ -14,26 +14,42 @@ Velog 스타일의 "Looking Ahead" 달력표를 자동 생성하는 스크립트
 
 ## 사용법
 
-### 기본 실행 (8주 앞까지 표시)
+### 기본 실행 (3개월 앞 행사, 8주 앞 자격시험)
 ```bash
 cd 05_calendar
 python generate_looking_ahead.py
 ```
 
-### 12주 앞까지 표시
+### 1년치 전체 일정 보기 (추천!)
 ```bash
-python generate_looking_ahead.py --weeks 12
+python generate_looking_ahead.py --all
 ```
 
-### 전체 행사 표시
+### 전체 데이터베이스 일정 보기 (2년치)
 ```bash
-python generate_looking_ahead.py --all-events
+python generate_looking_ahead.py --full
 ```
 
-### root README.md 업데이트
+### 사용자 정의 기간 설정
 ```bash
-python generate_looking_ahead.py --update-readme
+# 6개월 앞 행사, 12주 앞 자격시험
+python generate_looking_ahead.py --months 6 --weeks 12
 ```
+
+### Velog 달력 업데이트
+```bash
+python generate_looking_ahead.py --all --update-velog
+```
+
+## 사용 옵션
+
+| 옵션 | 설명 | 기본값 |
+|------|------|--------|
+| `--months N` | 행사 조회 기간 (개월) | 3 |
+| `--weeks N` | 자격시험 조회 기간 (주) | 8 |
+| `--all` | 1년치 전체 일정 표시 | - |
+| `--full` | 전체 데이터베이스 일정 표시 (2년) | - |
+| `--update-velog` | velog_calendar.md 업데이트 | - |
 
 ## 행사 데이터 수정
 

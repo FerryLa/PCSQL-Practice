@@ -1,6 +1,13 @@
 {
   "domestic": [
     {
+      "date": "2026-01-12",
+      "name": "Web3 OPEN CONFERENCE 2026",
+      "location": "KR",
+      "city": "서울",
+      "description": "Web3와 실물경제 연결"
+    },
+    {
       "date": "2026-01-30",
       "name": "AI SEOUL 2026",
       "location": "KR",
@@ -236,6 +243,41 @@
       "location": "KR",
       "city": "전국",
       "description": "데이터분석 자격시험"
+    },
+    {
+      "date": "2026-02-07",
+      "name": "AI-POT (AI 프롬프트 활용능력)",
+      "location": "KR",
+      "city": "전국",
+      "description": "제1회 시험, 프롬프트 작성 및 활용 능력 검증"
+    },
+    {
+      "date": "2026-02-14",
+      "name": "AIBT (AI 비즈니스 활용능력)",
+      "location": "KR",
+      "city": "전국",
+      "description": "정기시험 (매월 둘째 주 토요일)"
+    },
+    {
+      "date": "2026-02-28",
+      "name": "GTQ-AI (그래픽기술자격-AI)",
+      "location": "KR",
+      "city": "전국",
+      "description": "디자인·그래픽 분야 AI 활용 능력 검증"
+    },
+    {
+      "date": "2026-02-28",
+      "name": "AICE (AI Certificate for Everyone)",
+      "location": "KR",
+      "city": "온라인",
+      "description": "국가공인 AI 자격증, 짝수 달 정기 시행"
+    },
+    {
+      "date": "상시",
+      "name": "SK AX AI 역량 인증",
+      "location": "KR",
+      "city": "기업 내부",
+      "description": "AI Literacy → AI Transformation 단계별 인증"
     },
     {
       "date": "2026-03-14",
