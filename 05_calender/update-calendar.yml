@@ -1,0 +1,39 @@
+name: Update Looking Ahead Calendar
+
+on:
+  schedule:
+    # 매주 일요일 UTC 00:00 (KST 09:00)
+    - cron: "0 0 * * 0"
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  update-calendar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate Looking Ahead Calendar
+        run: |
+          cd 05_calendar
+          python generate_looking_ahead.py --all-events --update-velog
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "📅 Auto-update Looking Ahead calendar [skip ci]"
+          git push

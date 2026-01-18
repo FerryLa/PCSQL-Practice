@@ -1,0 +1,348 @@
+{
+  "domestic": [
+    {
+      "date": "2026-01-12",
+      "name": "Web3 OPEN CONFERENCE 2026",
+      "location": "KR",
+      "city": "서울",
+      "description": "Web3와 실물경제 연결"
+    },
+    {
+      "date": "2026-01-30",
+      "name": "AI SEOUL 2026",
+      "location": "KR",
+      "city": "서울",
+      "description": "AI 산업 전반 컨퍼런스"
+    },
+    {
+      "date": "2026년 초",
+      "name": "Web3 AI Seoul",
+      "location": "KR",
+      "city": "서울",
+      "description": "Web3+AI 융합"
+    },
+    {
+      "date": "2026-07-06~11",
+      "name": "ICML 2026",
+      "location": "KR",
+      "city": "서울 COEX",
+      "description": "ML 3대 학회"
+    },
+    {
+      "date": "2026-08-09~13",
+      "name": "KDD 2026",
+      "location": "KR",
+      "city": "제주도",
+      "description": "데이터마이닝 학회"
+    }
+  ],
+  "international": [
+    {
+      "date": "2026-01-06~09",
+      "name": "CES 2026",
+      "location": "US",
+      "city": "라스베이거스",
+      "description": "세계 최대 IT 전시회"
+    },
+    {
+      "date": "2026-01-19~23",
+      "name": "다보스 WEF",
+      "location": "CH",
+      "city": "다보스",
+      "description": "AI 거버넌스 논의"
+    },
+    {
+      "date": "2026-01-20~27",
+      "name": "AAAI-26",
+      "location": "SG",
+      "city": "싱가포르",
+      "description": "AI 학술 최대 행사"
+    },
+    {
+      "date": "2026-02-05~06",
+      "name": "NFT Paris",
+      "location": "FR",
+      "city": "파리",
+      "description": "Web3·RWA 트랙"
+    },
+    {
+      "date": "2026-02-11~12",
+      "name": "Consensus HK",
+      "location": "HK",
+      "city": "홍콩",
+      "description": "아시아 블록체인"
+    },
+    {
+      "date": "2026-02-17~21",
+      "name": "ETHDenver",
+      "location": "US",
+      "city": "덴버",
+      "description": "이더리움 해커톤"
+    },
+    {
+      "date": "2026-03-16~19",
+      "name": "NVIDIA GTC",
+      "location": "US",
+      "city": "산호세",
+      "description": "AI 하드웨어 컨퍼런스"
+    },
+    {
+      "date": "2026-04-15~16",
+      "name": "Paris Blockchain Week",
+      "location": "FR",
+      "city": "파리",
+      "description": "유럽 Web3 허브"
+    },
+    {
+      "date": "2026-04-26~05-01",
+      "name": "ICLR 2026",
+      "location": "ES",
+      "city": "바르셀로나",
+      "description": "딥러닝 표현학습"
+    },
+    {
+      "date": "2026-04-29~30",
+      "name": "TOKEN2049 Dubai",
+      "location": "AE",
+      "city": "두바이",
+      "description": "글로벌 크립토 네트워킹"
+    },
+    {
+      "date": "2026-05-05~07",
+      "name": "Consensus Miami",
+      "location": "US",
+      "city": "마이애미",
+      "description": "북미 최대 블록체인"
+    },
+    {
+      "date": "2026-06-01~05",
+      "name": "ICRA 2026",
+      "location": "AT",
+      "city": "비엔나",
+      "description": "IEEE 로봇 자동화"
+    },
+    {
+      "date": "2026-06-02~06",
+      "name": "CVPR 2026",
+      "location": "US",
+      "city": "덴버",
+      "description": "컴퓨터비전 최대"
+    },
+    {
+      "date": "2026-08-15~21",
+      "name": "IJCAI 2026",
+      "location": "DE",
+      "city": "브레멘",
+      "description": "AI 종합 학회"
+    },
+    {
+      "date": "2026-09-08~13",
+      "name": "ECCV 2026",
+      "location": "SE",
+      "city": "말뫼",
+      "description": "유럽 컴퓨터비전"
+    },
+    {
+      "date": "2026-09-27~10-01",
+      "name": "IROS 2026",
+      "location": "US",
+      "city": "피츠버그",
+      "description": "지능형 로봇 시스템"
+    },
+    {
+      "date": "2026-10-07",
+      "name": "TOKEN2049 Singapore",
+      "location": "SG",
+      "city": "싱가포르",
+      "description": "아시아 크립토 허브"
+    },
+    {
+      "date": "2026-12-14~18",
+      "name": "NeurIPS 2026",
+      "location": "AU",
+      "city": "시드니",
+      "description": "ML 최대 규모 학회"
+    }
+  ],
+  "academic": [
+    {
+      "date": "2026-01-20~27",
+      "name": "AAAI-26 학술",
+      "location": "SG",
+      "city": "싱가포르",
+      "description": "AI 최상위 프로그램"
+    },
+    {
+      "date": "2026-02-04~05",
+      "name": "AI & Big Data",
+      "location": "GB",
+      "city": "런던",
+      "description": "AI·빅데이터 발표"
+    },
+    {
+      "date": "2026-02-09~10",
+      "name": "AI Revolution",
+      "location": "SG",
+      "city": "싱가포르",
+      "description": "AI 연구·응용 발표"
+    },
+    {
+      "date": "2026-04-26~05-01",
+      "name": "ICLR 2026",
+      "location": "ES",
+      "city": "바르셀로나",
+      "description": "표현학습 최상위"
+    },
+    {
+      "date": "2026-06-02~06",
+      "name": "CVPR 2026",
+      "location": "US",
+      "city": "덴버",
+      "description": "컴퓨터비전 최상위"
+    },
+    {
+      "date": "2026-07-02~07",
+      "name": "ACL 2026",
+      "location": "US",
+      "city": "샌디에이고",
+      "description": "NLP 최상위 학회"
+    },
+    {
+      "date": "2026-07-06~11",
+      "name": "ICML 2026",
+      "location": "KR",
+      "city": "서울",
+      "description": "ML 최상위 프로그램"
+    },
+    {
+      "date": "2026-08-15~21",
+      "name": "IJCAI 2026",
+      "location": "DE",
+      "city": "브레멘",
+      "description": "AI 종합 학술"
+    },
+    {
+      "date": "2026-09-08~13",
+      "name": "ECCV 2026",
+      "location": "SE",
+      "city": "말뫼",
+      "description": "컴퓨터비전 유럽"
+    },
+    {
+      "date": "2026-12-14~18",
+      "name": "NeurIPS 2026",
+      "location": "AU",
+      "city": "시드니",
+      "description": "ML 최대 학술행사"
+    }
+  ],
+  "certifications": [
+    {
+      "date": "2026-02-07",
+      "name": "ADsP/ADP 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "데이터분석 자격시험"
+    },
+    {
+      "date": "2026-02-07",
+      "name": "AI-POT (AI 프롬프트 활용능력)",
+      "location": "KR",
+      "city": "전국",
+      "description": "제1회 시험, 프롬프트 작성 및 활용 능력 검증"
+    },
+    {
+      "date": "2026-02-14",
+      "name": "AIBT (AI 비즈니스 활용능력)",
+      "location": "KR",
+      "city": "전국",
+      "description": "정기시험 (매월 둘째 주 토요일)"
+    },
+    {
+      "date": "2026-02-28",
+      "name": "GTQ-AI (그래픽기술자격-AI)",
+      "location": "KR",
+      "city": "전국",
+      "description": "디자인·그래픽 분야 AI 활용 능력 검증"
+    },
+    {
+      "date": "2026-02-28",
+      "name": "AICE (AI Certificate for Everyone)",
+      "location": "KR",
+      "city": "온라인",
+      "description": "국가공인 AI 자격증, 짝수 달 정기 시행"
+    },
+    {
+      "date": "상시",
+      "name": "SK AX AI 역량 인증",
+      "location": "KR",
+      "city": "기업 내부",
+      "description": "AI Literacy → AI Transformation 단계별 인증"
+    },
+    {
+      "date": "2026-03-14",
+      "name": "SQLD 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "SQL 개발자 자격시험"
+    },
+    {
+      "date": "2026-05-16",
+      "name": "ADsP/ADP 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "데이터분석 자격시험"
+    },
+    {
+      "date": "2026-06-20",
+      "name": "SQLD 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "SQL 개발자 자격시험"
+    },
+    {
+      "date": "2026-08-08",
+      "name": "ADsP/ADP 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "데이터분석 자격시험"
+    },
+    {
+      "date": "2026-09-19",
+      "name": "SQLD/SQLP 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "SQL 자격시험"
+    },
+    {
+      "date": "2026-11-07",
+      "name": "ADsP/ADP 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "데이터분석 자격시험"
+    },
+    {
+      "date": "2026-12-05",
+      "name": "SQLD 필기",
+      "location": "KR",
+      "city": "전국",
+      "description": "SQL 개발자 자격시험"
+    }
+  ],
+  "country_flags": {
+    "KR": "🇰🇷",
+    "US": "🇺🇸",
+    "CH": "🇨🇭",
+    "SG": "🇸🇬",
+    "FR": "🇫🇷",
+    "HK": "🇭🇰",
+    "GB": "🇬🇧",
+    "ES": "🇪🇸",
+    "AE": "🇦🇪",
+    "AT": "🇦🇹",
+    "DE": "🇩🇪",
+    "SE": "🇸🇪",
+    "AU": "🇦🇺",
+    "JP": "🇯🇵"
+  }
+}
