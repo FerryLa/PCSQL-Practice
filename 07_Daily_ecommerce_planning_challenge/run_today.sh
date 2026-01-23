@@ -6,6 +6,8 @@ USED_FILE="3_Idea_Pool/used_ideas.txt"
 DAILY_DIR="1_Daily_Records"
 TEMPLATE="# Day {N} – {IDEA}
 
+날짜: {DATE}
+
 ## 1. 한 줄 요약
 
 (이 서비스가 해결하려는 핵심을 사용자 말로 1문장)
@@ -82,8 +84,11 @@ DAY_DIR="$DAILY_DIR/day$DAY_NUM"
 # 디렉토리 생성
 mkdir -p "$DAY_DIR"
 
+# 오늘 날짜 생성 (YYYY-MM-DD 형식)
+TODAY=$(date +%Y-%m-%d)
+
 # README 생성
-echo "$TEMPLATE" | sed "s/{N}/$DAY_NUM/g" | sed "s/{IDEA}/$IDEA/g" > "$DAY_DIR/README.md"
+echo "$TEMPLATE" | sed "s/{N}/$DAY_NUM/g" | sed "s/{IDEA}/$IDEA/g" | sed "s/{DATE}/$TODAY/g" > "$DAY_DIR/README.md"
 
 # 사용한 아이디어 기록
 echo "$IDEA" >> "$USED_FILE"
