@@ -1,7 +1,7 @@
 -- Site   : Programmers
--- Title  :오프라인/온라인 판매 데이터 통합하기 (LEVEL 4)
+-- Title  : 오프라인/온라인 판매 데이터 통합하기 (LEVEL 4)
 -- Link   : https://school.programmers.co.kr/learn/courses/30/lessons/131537
--- Date   : 2026-01-24
+-- Date   : 2026-01-25
 
 
 SELECT 
