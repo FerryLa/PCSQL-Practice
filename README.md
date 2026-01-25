@@ -82,30 +82,52 @@
 
 </details>
 
-- **SQL Analytics Practice (00_sql-analytics-practice)**  
+<details>
+<summary>100일 이커머스 기획 챌린지</summary>
+
+### 이커머스 기획 챌린지 집계 (자동 업데이트)
+
+<!-- ECOMMERCE_CHALLENGE:START -->
+
+| Week      | Count | Graph        |
+|-----------|-------|--------------|
+| 2026-W02 |     2 | ██████       |
+| 2026-W03 |     3 | ██████████   |
+| 2026-W04 |     2 | ██████       |
+
+> 매주 일요일 오전 10시 GitHub Action을 통해 자동 집계됩니다.
+
+<!-- ECOMMERCE_CHALLENGE:END -->
+
+</details>
+
+- **SQL Analytics Practice (00_sql-analytics-practice)**
   프로그래머스 일일 코딩 문제 풀이 및 자동화 스크립트 관리
 
 ---
 
 ## 프로젝트 개요
 
-**PCSQL-PRACTICE**는 매일 SQL 학습 습관을 통해 쿼리 역량을 강화하고,  
+**PCSQL-PRACTICE**는 매일 SQL 학습 습관을 통해 쿼리 역량을 강화하고,
 PostgreSQL DB 구축 경험과 Timer, Calendar 등 다양한 아이디어를 실험하는 GitHub Tools 모음입니다.
 
-- **SQL Analytics Practice (00_sql-analytics-practice)**  
+- **SQL Analytics Practice (00_sql-analytics-practice)**
   프로그래머스 일일 코딩 문제 풀이 및 자동화 스크립트 관리
 
-- **Certification Plan (01_cert_week_7)**  
+- **Certification Plan (01_cert_week_7)**
   단기 7주 플랜 학습 기록
 
-- **PostgreSQL / MySQL (02_postgresql, 03_mysql)**  
+- **PostgreSQL / MySQL (02_postgresql, 03_mysql)**
   데이터베이스 구축 및 실습
 
-- **Timer & Calendar (04_timer, 05_calendar)**  
+- **Timer & Calendar (04_timer, 05_calendar)**
   일정 관리 및 자동화 달력 생성
 
-- **Dual Translation (06_dual_translation)**  
+- **Dual Translation (06_dual_translation)**
   번역 및 데이터 처리 실험
+
+- **100일 이커머스 기획 챌린지 (07_Daily_ecommerce_planning_challenge)**
+  매일 하나의 이커머스 아이디어를 15분 안에 기획하여 실무 감각 강화
 
 ---
 
