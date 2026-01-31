@@ -57,8 +57,8 @@ fi
 # 사용한 아이디어 파일 생성 (없으면)
 touch "$USED_FILE"
 
-# 사용하지 않은 아이디어만 필터링
-AVAILABLE_IDEAS=$(comm -23 <(sort "$IDEA_FILE") <(sort "$USED_FILE"))
+# 사용하지 않은 아이디어만 필터링 (번호 제거 후 비교)
+AVAILABLE_IDEAS=$(comm -23 <(sed 's/^[[:space:]]*[0-9]*→//' "$IDEA_FILE" | sort) <(sort "$USED_FILE"))
 
 if [ -z "$AVAILABLE_IDEAS" ]; then
     echo "🎉 모든 아이디어를 사용했습니다!"
