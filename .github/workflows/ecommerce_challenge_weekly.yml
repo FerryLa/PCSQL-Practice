@@ -1,9 +1,9 @@
-name: Update Ecommerce Challenge Weekly Stats
+name: Update Weekly Stats
 
 on:
   schedule:
-    # 매주 일요일 오전 10시 (KST) = 매주 일요일 오전 1시 (UTC)
-    - cron: '0 1 * * 0'
+    # 매주 일요일 오전 9시 (KST) = 매주 일요일 오전 0시 (UTC)
+    - cron: '0 0 * * 0'
   workflow_dispatch:  # 수동 실행 가능
 
 permissions:
@@ -27,7 +27,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run weekly stats update
+      - name: Run programmers weekly stats update
+        run: |
+          cd 00_sql-analytics-practice/scripts
+          python weekly_status.py --update-readme
+
+      - name: Run ecommerce challenge weekly stats update
         run: |
           cd 07_Daily_ecommerce_planning_challenge/scripts
           python update_readme.py
@@ -43,7 +48,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git commit -m "chore: update ecommerce challenge weekly stats"
+          git commit -m "chore: update weekly stats (programmers & ecommerce)"
           git push origin develop
 
       - name: Merge develop to main
