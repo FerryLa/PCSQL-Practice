@@ -34,6 +34,14 @@ WITH analysis AS (
 )
 SELECT * FROM analysis WHERE rn <= 3;
 
+--
+
+재귀 CTE (Common Table Expression)
+WITH RECURSIVE 이름 AS (
+    ① 시작값 (Anchor)
+    UNION ALL
+    ② 반복될 부분 (Recursive)
+)
 
 
 -- 1. 부서별 급여 1위 찾기
