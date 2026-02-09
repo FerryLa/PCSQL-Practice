@@ -1,24 +1,34 @@
-
-## 2. Weekly Progress 스크립트 (`weekly_progress.py`)
+#!/usr/bin/env python3
+"""
+프로그래머스 SQL 문제 풀이 주간 집계 스크립트
+Root README.md에 자동 업데이트 기능 포함
+"""
 
 import os
 import re
+import sys
 from datetime import datetime
 from collections import Counter
 
-# 레포 루트 기준: programmers/ 아래를 탐색
-# (__file__) -> scripts -> 00_sql-analytics-practice 가 되도록 상위 폴더를 기준으로 삼는다.
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TARGET_DIR = os.path.join(ROOT_DIR, "programmers")
+# 디렉토리 설정
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SQL_ANALYTICS_DIR = os.path.dirname(SCRIPT_DIR)
+ROOT_DIR = os.path.dirname(SQL_ANALYTICS_DIR)
+TARGET_DIR = os.path.join(SQL_ANALYTICS_DIR, "programmers")
+ROOT_README_PATH = os.path.join(ROOT_DIR, "README.md")
 
-# -- Date   : YYYY-MM-DD 형식 파싱용
+# 마커
+START_MARKER = "<!-- PROGRAMMERS_WEEKLY:START -->"
+END_MARKER = "<!-- PROGRAMMERS_WEEKLY:END -->"
+
+# Date 파싱 패턴
 DATE_PATTERN = re.compile(r"--\s*Date\s*:\s*(\d{4}-\d{2}-\d{2})")
+
 
 def extract_date(path: str):
     """파일 상단에서 Date 한 줄을 찾아 date 객체로 반환."""
     try:
         with open(path, encoding="utf-8") as f:
-            # 헤더는 보통 상단 몇 줄 안에 있으니 10줄만 본다
             for _ in range(10):
                 line = f.readline()
                 if not line:
@@ -27,9 +37,9 @@ def extract_date(path: str):
                 if m:
                     return datetime.strptime(m.group(1), "%Y-%m-%d").date()
     except UnicodeDecodeError:
-        # 인코딩 꼬인 파일 같은 건 그냥 무시
         return None
     return None
+
 
 def collect_weekly_counts():
     """
@@ -39,7 +49,7 @@ def collect_weekly_counts():
     weekly = Counter()
 
     if not os.path.isdir(TARGET_DIR):
-        return weekly  # programmers 폴더 없으면 빈 결과
+        return weekly
 
     for year in os.listdir(TARGET_DIR):
         year_path = os.path.join(TARGET_DIR, year)
@@ -61,34 +71,77 @@ def collect_weekly_counts():
                     continue
 
                 iso_year, iso_week, _ = d.isocalendar()
-                key = f"{iso_year}-W{iso_week:02d}"  # 예: 2025-W48
+                key = f"{iso_year}-W{iso_week:02d}"
                 weekly[key] += 1
 
-    # 주차 기준으로 정렬된 dict 반환
     return dict(sorted(weekly.items()))
 
+
 def build_markdown(weekly_counts):
-    """주별 개수를 받아 README에 붙일 수 있는 마크다운 문자열 생성."""
+    """주별 개수를 받아 마크다운 테이블 문자열 생성."""
     if not weekly_counts:
-        return "## 📊 Weekly SQL Solve Count\n\n데이터가 없습니다.\n"
+        return "| Week      | Count | Graph        |\n|-----------|-------|--------------|"
 
     lines = [
-        "## 📊 Weekly SQL Solve Count",
-        "",
         "| Week      | Count | Graph        |",
         "|-----------|-------|--------------|",
     ]
 
     max_count = max(weekly_counts.values())
     for week, count in weekly_counts.items():
-        # 가장 많이 푼 주를 기준으로 막대 길이 스케일 (최대 10)
         bar_len = max(1, int(count / max_count * 10)) if max_count > 0 else 1
         bar = "█" * bar_len
         lines.append(f"| {week} | {count:5d} | {bar:<12} |")
 
     return "\n".join(lines)
 
-if __name__ == "__main__":
+
+def update_readme():
+    """Root README.md 파일 업데이트"""
+    if not os.path.exists(ROOT_README_PATH):
+        print(f"Error: README.md not found at {ROOT_README_PATH}")
+        return False
+
+    with open(ROOT_README_PATH, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    start_idx = content.find(START_MARKER)
+    end_idx = content.find(END_MARKER)
+
+    if start_idx == -1 or end_idx == -1:
+        print("Error: Markers not found in README.md")
+        print("Please add the following markers to README.md:")
+        print(START_MARKER)
+        print(END_MARKER)
+        return False
+
     weekly_counts = collect_weekly_counts()
-    markdown = build_markdown(weekly_counts)
-    print(markdown)
+    stats_markdown = build_markdown(weekly_counts)
+
+    new_content = (
+        content[:start_idx + len(START_MARKER)]
+        + "\n\n"
+        + stats_markdown
+        + "\n\n> 매주 일요일 오전 9시 GitHub Action을 통해 자동 집계됩니다.\n\n"
+        + content[end_idx:]
+    )
+
+    if new_content == content:
+        print("No changes needed.")
+        return True
+
+    with open(ROOT_README_PATH, "w", encoding="utf-8") as f:
+        f.write(new_content)
+
+    print(f"Successfully updated {ROOT_README_PATH}")
+    return True
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--update-readme":
+        success = update_readme()
+        sys.exit(0 if success else 1)
+    else:
+        weekly_counts = collect_weekly_counts()
+        markdown = build_markdown(weekly_counts)
+        print(markdown)
