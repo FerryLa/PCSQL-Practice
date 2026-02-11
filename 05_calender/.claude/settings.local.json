@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python weekly_status.py:*)"
+      "Bash(python weekly_status.py:*)",
+      "Bash(flutter --version:*)",
+      "Bash(git --version:*)",
+      "Bash(git clone:*)",
+      "Bash(export PATH=\"$PATH:C:/flutter/bin\")",
+      "Bash(\"C:/flutter/bin/flutter.bat\" --version)",
+      "Bash(powershell -Command:*)",
+      "Bash(\"C:/flutter/bin/flutter.bat\" create --org com.ferryla --project-name study_hub \"C:/dev/pcsql-practice/study_hub\")",
+      "Bash(\"C:/flutter/bin/flutter.bat\" pub get)",
+      "Bash(\"C:/flutter/bin/flutter.bat\" analyze \"C:/dev/pcsql-practice/study_hub\")",
+      "Bash(\"C:/flutter/bin/flutter.bat\" run -d chrome)",
+      "Bash(\"C:/flutter/bin/flutter.bat\" doctor)"
     ]
   }
 }
