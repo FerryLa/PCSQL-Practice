@@ -3,15 +3,18 @@
 -- Link   : https://school.programmers.co.kr/learn/courses/30/lessons/293261
 -- Date   : 2026-01-22
 
-SELECT I.ID, N.FISH_NAME, I.LENGTH
-FROM (
-    SELECT 
-        FISH_TYPE,
-        MAX(LENGTH) AS MAX_LENGTH
-    FROM FISH_INFO
-    GROUP BY FISH_TYPE
-) AS I
-JOIN FISH_NAME_INFO N ON I.FISH_TYPE = N.FISH_TYPE
-ORDER BY I.ID;
+WITH ranked AS (
+    SELECT
+        F.ID,
+        FN.FISH_NAME,
+        F.LENGTH,
+        ROU_NUMBER() OVER (
+            PARTITION BY F.FISH_TYPE
+            ORDER BY F.LENGTH DESC
+        ) AS RN
+    FROM FISH_INFO F
+    JOIN FISH_NAME_INFO FN ON F.FISH_TYPE = FN.FISH_TYPE
+)
 
 -- JOIN시 키값이 하나여야 한다. / 오답 복기
+-- 오답 복기 완료
