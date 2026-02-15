@@ -12,7 +12,16 @@
       "Bash(\"C:/flutter/bin/flutter.bat\" pub get)",
       "Bash(\"C:/flutter/bin/flutter.bat\" analyze \"C:/dev/pcsql-practice/study_hub\")",
       "Bash(\"C:/flutter/bin/flutter.bat\" run -d chrome)",
-      "Bash(\"C:/flutter/bin/flutter.bat\" doctor)"
+      "Bash(\"C:/flutter/bin/flutter.bat\" doctor)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(flutter create:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
