@@ -130,6 +130,22 @@ class UpgradePurchaseInput(BaseModel):
     kpi_target: str
     boost_value: float
 
+class SimpleGameEndInput(BaseModel):
+    """간단한 게임 종료 입력 (세션 없이)"""
+    nickname: str
+    total_score: int
+    grade: str
+    final_energy: float
+    final_stability: float
+    final_productivity: float
+    yield_rate: float = 100.0
+    strategy_used: str = "balanced"
+    total_stars: int = 0
+    max_combo: int = 0
+    stages_completed: int = 0
+    lives_remaining: int = 0
+    coins_earned: int = 0
+
 
 # ═══════════════════════════════════════════════════════════════
 # APP LIFECYCLE
@@ -396,6 +412,89 @@ async def purchase_upgrade(data: UpgradePurchaseInput, db: AsyncSession = Depend
     )
     await db.commit()
     return {"status": "ok"}
+
+
+@app.post("/api/games/quick-save")
+async def quick_save_game(data: SimpleGameEndInput, db: AsyncSession = Depends(get_db)):
+    """간단한 게임 저장 (플레이어 자동 생성, 세션 없이)"""
+
+    # 1. 플레이어 생성/조회
+    result = await db.execute(
+        text("""
+            INSERT INTO players (nickname, best_score, best_grade, best_energy, best_stability, best_productivity)
+            VALUES (:nickname, 0, 'F', 0, 0, 0)
+            ON CONFLICT (nickname) DO NOTHING
+            RETURNING id
+        """),
+        {"nickname": data.nickname}
+    )
+    player_row = result.mappings().first()
+
+    if not player_row:
+        # 이미 존재하는 플레이어
+        result = await db.execute(
+            text("SELECT id FROM players WHERE nickname = :nickname"),
+            {"nickname": data.nickname}
+        )
+        player_row = result.mappings().first()
+
+    player_id = player_row["id"]
+
+    # 2. 게임 세션 생성
+    result = await db.execute(
+        text("""
+            INSERT INTO game_sessions (
+                player_id, total_score, grade,
+                final_energy, final_stability, final_productivity,
+                yield_rate, strategy_used, ended_at,
+                total_stars, max_combo, stages_completed, lives_remaining, coins_earned
+            )
+            VALUES (
+                :pid, :score, :grade,
+                :energy, :stability, :productivity,
+                :yield, :strategy, NOW(),
+                :stars, :combo, :stages, :lives, :coins
+            )
+            RETURNING id
+        """),
+        {
+            "pid": player_id, "score": data.total_score, "grade": data.grade,
+            "energy": data.final_energy, "stability": data.final_stability, "productivity": data.final_productivity,
+            "yield": data.yield_rate, "strategy": data.strategy_used,
+            "stars": data.total_stars, "combo": data.max_combo, "stages": data.stages_completed,
+            "lives": data.lives_remaining, "coins": data.coins_earned,
+        }
+    )
+    session_row = result.mappings().first()
+    session_id = session_row["id"]
+
+    # 3. 플레이어 최고 기록 업데이트
+    await db.execute(
+        text("""
+            UPDATE players SET
+                best_score = GREATEST(best_score, :score),
+                best_grade = CASE
+                    WHEN :score > best_score THEN :grade
+                    ELSE best_grade
+                END,
+                best_energy = GREATEST(best_energy, :energy),
+                best_stability = GREATEST(best_stability, :stability),
+                best_productivity = GREATEST(best_productivity, :productivity),
+                total_games = total_games + 1
+            WHERE id = :pid
+        """),
+        {
+            "pid": player_id, "score": data.total_score, "grade": data.grade,
+            "energy": data.final_energy, "stability": data.final_stability,
+            "productivity": data.final_productivity,
+        }
+    )
+
+    # 4. 리더보드 갱신
+    await db.execute(text("REFRESH MATERIALIZED VIEW CONCURRENTLY leaderboard"))
+
+    await db.commit()
+    return {"status": "saved", "session_id": session_id, "player_id": player_id}
 
 
 # ═══════════════════════════════════════════════════════════════
