@@ -167,9 +167,58 @@ function SparkLine({ data, color = "#00b894", width = 100, height = 28, label })
 // REDASH DASHBOARD - CORE IN-GAME MECHANIC
 // ═══════════════════════════════════════════════════════════════
 
-// TODO: RedashDashboard 컴포넌트 JSX 구조 수정 필요 (임시로 간소화)
 function RedashDashboard({ gameData, isOpen, onClose, onDecision, upgrades }) {
+  const [redashUrl, setRedashUrl] = useState(
+    localStorage?.getItem?.("redash_url") || ""
+  );
+  const [redashInput, setRedashInput] = useState(redashUrl);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [autoConnecting, setAutoConnecting] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  const hasPro = upgrades.includes("redash_pro");
+  const insightBoost = hasPro ? 1.2 : 1;
+
+  // 백엔드에서 리더보드 데이터 가져오기
+  useEffect(() => {
+    if (!isOpen) return;
+    setDataLoading(true);
+    fetch("/api/leaderboard?limit=20")
+      .then(res => res.json())
+      .then(data => setLeaderboardData(Array.isArray(data) ? data : []))
+      .catch(() => setLeaderboardData([]))
+      .finally(() => setDataLoading(false));
+  }, [isOpen]);
+
+  // 백엔드에서 Redash URL 자동 가져오기
+  useEffect(() => {
+    if (redashUrl || autoConnecting) return;
+    setAutoConnecting(true);
+
+    fetch("/api/redash/dashboard-url")
+      .then(res => res.json())
+      .then(data => {
+        if (data.url) {
+          setRedashUrl(data.url);
+          setRedashInput(data.url);
+          try { localStorage?.setItem?.("redash_url", data.url); } catch {}
+        }
+      })
+      .catch(() => {
+        // 백엔드 연결 실패시 무시 (오프라인 모드)
+      })
+      .finally(() => setAutoConnecting(false));
+  }, []);
+
   if (!isOpen) return null;
+
+  const saveRedashUrl = () => {
+    const cleaned = redashInput.trim();
+    setRedashUrl(cleaned);
+    setIframeLoaded(false);
+    try { localStorage?.setItem?.("redash_url", cleaned); } catch {}
+  };
 
   return (
     <div style={{
@@ -178,50 +227,260 @@ function RedashDashboard({ gameData, isOpen, onClose, onDecision, upgrades }) {
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
-        width: "80%", maxWidth: 600, padding: 40,
+        width: "90%", maxWidth: 700, maxHeight: "90vh",
         background: "linear-gradient(145deg, #0d1117, #161b22)",
         borderRadius: 20, border: "1px solid #30363d",
         boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
-        textAlign: "center",
+        display: "flex", flexDirection: "column",
+        overflow: "hidden",
       }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-        <h2 style={{ color: "#e6edf3", marginBottom: 12, fontSize: 24 }}>
-          대시보드 (준비중)
-        </h2>
-        <p style={{ color: "#8b949e", marginBottom: 24, lineHeight: 1.6 }}>
-          KPI 분석, 불량 분석, 전략 추천 등의 기능이<br/>
-          곧 추가될 예정입니다.
-        </p>
+        {/* Header */}
         <div style={{
-          padding: 16, background: "#161b22", borderRadius: 12,
-          border: "1px solid #30363d", marginBottom: 24,
+          padding: "20px 24px",
+          borderBottom: "1px solid #30363d",
+          textAlign: "center",
         }}>
-          <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 8 }}>현재 KPI</div>
-          <div style={{ display: "flex", justifyContent: "space-around" }}>
-            <div>
-              <div style={{ fontSize: 20, color: "#e74c3c" }}>⚡</div>
-              <div style={{ fontSize: 11, color: "#8b949e" }}>에너지: {gameData.currentKpi.energy}</div>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>📊</div>
+          <h2 style={{ color: "#e6edf3", margin: 0, fontSize: 22 }}>
+            Redash 실시간 대시보드 {hasPro && <span style={{ color: "#f39c12", fontSize: 14 }}>✨ PRO</span>}
+          </h2>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
+          {/* Pro 혜택 안내 */}
+          {hasPro && (
+            <div style={{
+              padding: 12, background: "linear-gradient(90deg, #f39c1222, #fdcb6e22)",
+              borderRadius: 8, border: "1px solid #f39c12", marginBottom: 16,
+              fontSize: 11, color: "#f39c12", textAlign: "center",
+            }}>
+              ✨ Redash Pro 활성화: 분석 정밀도 +20%, 고급 차트 잠금 해제
             </div>
-            <div>
-              <div style={{ fontSize: 20, color: "#3498db" }}>🛡️</div>
-              <div style={{ fontSize: 11, color: "#8b949e" }}>안전성: {gameData.currentKpi.stability}</div>
+          )}
+
+          {/* KPI 요약 */}
+          <div style={{
+            padding: 16, background: "#161b22", borderRadius: 12,
+            border: "1px solid #30363d", marginBottom: 20,
+          }}>
+            <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 12 }}>
+              현재 게임 KPI {hasPro && <span style={{ color: "#f39c12" }}>(정밀도 ×{insightBoost.toFixed(1)})</span>}
             </div>
-            <div>
-              <div style={{ fontSize: 20, color: "#2ecc71" }}>⚙️</div>
-              <div style={{ fontSize: 11, color: "#8b949e" }}>생산성: {gameData.currentKpi.productivity}</div>
+            <div style={{ display: "flex", justifyContent: "space-around" }}>
+              <div>
+                <div style={{ fontSize: 20, color: "#e74c3c" }}>⚡</div>
+                <div style={{ fontSize: 11, color: "#8b949e" }}>
+                  에너지: {Math.round(gameData.currentKpi.energy * insightBoost)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 20, color: "#3498db" }}>🛡️</div>
+                <div style={{ fontSize: 11, color: "#8b949e" }}>
+                  안전성: {Math.round(gameData.currentKpi.stability * insightBoost)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 20, color: "#2ecc71" }}>⚙️</div>
+                <div style={{ fontSize: 11, color: "#8b949e" }}>
+                  생산성: {Math.round(gameData.currentKpi.productivity * insightBoost)}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <button
-          onClick={onClose}
-          style={{
-            padding: "12px 32px", borderRadius: 12, border: "none",
-            background: "linear-gradient(135deg, #00b894, #00cec9)",
-            color: "#fff", fontSize: 14, fontWeight: 700,
-            cursor: "pointer",
+
+          {/* URL 입력 */}
+          <div style={{
+            padding: 16, background: "#0d1117", borderRadius: 12,
+            border: redashUrl ? "1px solid #00b89433" : "1px solid #30363d",
+            marginBottom: 16,
           }}>
-          닫기
-        </button>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginBottom: 10,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e6edf3" }}>
+                🔴 Redash Public URL
+              </div>
+              {redashUrl && (
+                <div style={{
+                  padding: "2px 8px", borderRadius: 6, fontSize: 9,
+                  background: "#00b89411", border: "1px solid #00b89433",
+                  color: "#00b894", fontWeight: 600,
+                }}>
+                  ✅ 연결됨
+                </div>
+              )}
+            </div>
+            {autoConnecting ? (
+              <div style={{ fontSize: 11, color: "#8b949e", padding: "10px", textAlign: "center" }}>
+                🔄 백엔드에서 Redash URL 자동 가져오는 중...
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 12, lineHeight: 1.6 }}>
+                  Redash에서 Dashboard → Share → "Allow public access" → Public URL 복사
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={redashInput}
+                    onChange={e => setRedashInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && saveRedashUrl()}
+                    placeholder="http://localhost:5000/public/dashboards/..."
+                    style={{
+                      flex: 1, padding: "10px 12px", borderRadius: 8,
+                      background: "#161b22", border: "1px solid #30363d",
+                      color: "#e6edf3", fontSize: 12, outline: "none",
+                      fontFamily: "monospace",
+                    }}
+                  />
+                  <button
+                    onClick={saveRedashUrl}
+                    disabled={!redashInput.trim()}
+                    style={{
+                      padding: "10px 20px", borderRadius: 8, border: "none",
+                      background: redashInput.trim()
+                        ? "linear-gradient(135deg, #00b894, #00cec9)"
+                        : "#21262d",
+                      color: redashInput.trim() ? "#fff" : "#8b949e",
+                      fontSize: 12, fontWeight: 700,
+                      cursor: redashInput.trim() ? "pointer" : "not-allowed",
+                    }}>
+                    연결
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Iframe */}
+          {redashUrl && (
+            <div style={{
+              borderRadius: 12, overflow: "hidden",
+              border: "1px solid #30363d", minHeight: 400,
+              background: "#0d1117",
+            }}>
+              <iframe
+                src={redashUrl}
+                style={{
+                  width: "100%", height: 400, border: "none",
+                  display: iframeLoaded ? "block" : "none",
+                }}
+                onLoad={() => setIframeLoaded(true)}
+                sandbox="allow-scripts allow-same-origin"
+              />
+              {!iframeLoaded && (
+                <div style={{
+                  height: 400, display: "flex", alignItems: "center",
+                  justifyContent: "center", color: "#8b949e", fontSize: 12,
+                }}>
+                  📊 대시보드 로딩 중...
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 리더보드 데이터 (Redash 대체) */}
+          <div style={{
+            padding: 16, background: "#0d1117", borderRadius: 12,
+            border: "1px solid #30363d", marginTop: 16,
+          }}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginBottom: 12,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#e6edf3" }}>
+                👑 리더보드 (Top 20)
+              </div>
+              {dataLoading && (
+                <div style={{ fontSize: 10, color: "#8b949e" }}>🔄 로딩 중...</div>
+              )}
+            </div>
+
+            {leaderboardData.length > 0 ? (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{
+                  width: "100%", fontSize: 11, color: "#e6edf3",
+                  borderCollapse: "collapse",
+                }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #30363d" }}>
+                      <th style={{ padding: "8px 4px", textAlign: "center", color: "#8b949e" }}>순위</th>
+                      <th style={{ padding: "8px 4px", textAlign: "left", color: "#8b949e" }}>닉네임</th>
+                      <th style={{ padding: "8px 4px", textAlign: "right", color: "#8b949e" }}>점수</th>
+                      <th style={{ padding: "8px 4px", textAlign: "center", color: "#8b949e" }}>등급</th>
+                      <th style={{ padding: "8px 4px", textAlign: "right", color: "#8b949e" }}>게임수</th>
+                      <th style={{ padding: "8px 4px", textAlign: "right", color: "#8b949e" }}>에너지</th>
+                      <th style={{ padding: "8px 4px", textAlign: "right", color: "#8b949e" }}>안전성</th>
+                      <th style={{ padding: "8px 4px", textAlign: "right", color: "#8b949e" }}>생산성</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboardData.map((row, idx) => (
+                      <tr key={idx} style={{
+                        borderBottom: "1px solid #21262d",
+                        background: idx % 2 === 0 ? "#0d111711" : "transparent",
+                      }}>
+                        <td style={{ padding: "8px 4px", textAlign: "center", fontWeight: 700 }}>
+                          {row.rank_by_score <= 3 ? ["🥇", "🥈", "🥉"][row.rank_by_score - 1] : row.rank_by_score}
+                        </td>
+                        <td style={{ padding: "8px 4px", fontWeight: 600 }}>{row.nickname}</td>
+                        <td style={{ padding: "8px 4px", textAlign: "right", color: "#f39c12" }}>
+                          {row.best_score?.toLocaleString()}
+                        </td>
+                        <td style={{ padding: "8px 4px", textAlign: "center" }}>
+                          <span style={{
+                            padding: "2px 6px", borderRadius: 4, fontSize: 9,
+                            background: row.best_grade === "S+" || row.best_grade === "S" ? "#e74c3c22" : "#3498db22",
+                            color: row.best_grade === "S+" || row.best_grade === "S" ? "#e74c3c" : "#3498db",
+                          }}>
+                            {row.best_grade}
+                          </span>
+                        </td>
+                        <td style={{ padding: "8px 4px", textAlign: "right", color: "#8b949e" }}>
+                          {row.total_games}
+                        </td>
+                        <td style={{ padding: "8px 4px", textAlign: "right", color: "#e74c3c" }}>
+                          {Math.round(row.best_energy)}
+                        </td>
+                        <td style={{ padding: "8px 4px", textAlign: "right", color: "#3498db" }}>
+                          {Math.round(row.best_stability)}
+                        </td>
+                        <td style={{ padding: "8px 4px", textAlign: "right", color: "#2ecc71" }}>
+                          {Math.round(row.best_productivity)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{
+                padding: 20, textAlign: "center", color: "#8b949e", fontSize: 11,
+              }}>
+                {dataLoading ? "데이터 로딩 중..." : "게임을 플레이하면 리더보드에 등록됩니다!"}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: "16px 24px",
+          borderTop: "1px solid #30363d",
+          textAlign: "center",
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "12px 32px", borderRadius: 12, border: "none",
+              background: "linear-gradient(135deg, #00b894, #00cec9)",
+              color: "#fff", fontSize: 14, fontWeight: 700,
+              cursor: "pointer",
+            }}>
+            닫기
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -988,7 +1247,10 @@ export default function BatteryGame() {
   const handleTimerExpired = () => {
     setLives(l => {
       const newLives = l - 1;
-      if (newLives <= 0) setScreen("gameover");
+      if (newLives <= 0) {
+        saveGameData();
+        setScreen("gameover");
+      }
       return Math.max(0, newLives);
     });
     setCombo(0);
@@ -1116,7 +1378,11 @@ export default function BatteryGame() {
     setDefectLog(prev => [...prev, { ...event, resolved: false }]);
     setCombo(0);
     setInspectionEvent(null);
-    if (lives <= 1) { setScreen("gameover"); return; }
+    if (lives <= 1) {
+      saveGameData();
+      setScreen("gameover");
+      return;
+    }
     advanceStage();
   };
 
@@ -1125,6 +1391,52 @@ export default function BatteryGame() {
     setCoins(c => c - upgrade.cost);
     setOwnedUpgrades(prev => [...prev, upgrade.id]);
   };
+
+  // 게임 종료 시 데이터 저장
+  const saveGameData = useCallback(async () => {
+    const nickname = localStorage?.getItem?.("player_nickname") || `플레이어${Date.now() % 10000}`;
+
+    // 등급 계산
+    let grade = "F";
+    if (score >= 9000) grade = "S+";
+    else if (score >= 8000) grade = "S";
+    else if (score >= 7000) grade = "A";
+    else if (score >= 6000) grade = "B";
+    else if (score >= 5000) grade = "C";
+    else if (score >= 4000) grade = "D";
+
+    const gameData = {
+      nickname,
+      total_score: score,
+      grade,
+      final_energy: currentKpi.energy,
+      final_stability: currentKpi.stability,
+      final_productivity: currentKpi.productivity,
+      yield_rate: yieldRate,
+      strategy_used: strategy,
+      total_stars: stageResults.reduce((sum, r) => sum + (r.stars || 0), 0),
+      max_combo: maxCombo,
+      stages_completed: currentStage,
+      lives_remaining: lives,
+      coins_earned: coins,
+    };
+
+    try {
+      const response = await fetch("/api/games/quick-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(gameData),
+      });
+      if (response.ok) {
+        console.log("✅ 게임 데이터 저장 완료");
+      } else {
+        const error = await response.text();
+        console.error("❌ 게임 데이터 저장 실패:", response.status, error);
+      }
+    } catch (error) {
+      console.error("❌ 게임 데이터 저장 실패:", error);
+    }
+  }, [score, currentKpi, yieldRate, strategy, stageResults, maxCombo, currentStage, lives, coins]);
 
   const startGame = () => {
     setScore(0); setStageResults([]); setCurrentStage(0); setCombo(0); setMaxCombo(0);
