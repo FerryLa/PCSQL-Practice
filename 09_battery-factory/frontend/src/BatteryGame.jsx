@@ -12,7 +12,43 @@ const GAME_CONFIG = {
   FEVER_MULTIPLIER: 2,
   QUALITY_INSPECTION_CHANCE: 0.25,
   STAR_THRESHOLDS: { three: 0.85, two: 0.65, one: 0.4 },
+  MAX_DIFFICULTY: 10,
+  MIN_DIFFICULTY: 1,
 };
+
+// 난이도별 설정
+const getDifficultyConfig = (difficulty) => ({
+  // Stage 1: 소재 혼합
+  buttonSize: Math.max(60, 120 - difficulty * 6), // 120px → 60px
+  buttonShuffle: difficulty > 3, // 난이도 4부터 셔플
+
+  // Stage 2: 코팅 공정
+  coatingTargetSize: Math.max(15, 40 - difficulty * 2.5), // 40% → 15%
+  coatingBarSpeed: 0.5 + difficulty * 0.15, // 0.5 → 2.0
+
+  // Stage 3: 프레싱 공정
+  pressingTargetSize: Math.max(12, 35 - difficulty * 2.3), // 35% → 12%
+  pressingBarSpeed: 0.6 + difficulty * 0.18, // 0.6 → 2.4
+  pressingPositionRandom: difficulty > 4, // 난이도 5부터 위치 랜덤
+
+  // Stage 4: 절단 공정
+  cuttingGridSize: Math.min(8, 3 + Math.floor(difficulty / 2)), // 3x3 → 8x8
+  cuttingTimeLimit: Math.max(0.3, 1.5 - difficulty * 0.12), // 1.5초 → 0.3초
+
+  // Stage 5: 조립 공정
+  assemblyLayers: Math.min(8, 4 + Math.floor(difficulty / 3)), // 4층 → 8층
+  assemblyShuffle: difficulty > 2, // 난이도 3부터 셔플
+
+  // Stage 6: 전해액 주입
+  injectionSpeed: 1.0 + difficulty * 0.3, // 1.0 → 4.0
+  injectionHasStop: difficulty > 1, // 난이도 2부터 Stop 필요
+  injectionOverflowPenalty: difficulty > 5, // 난이도 6부터 넘치면 패널티
+
+  // Stage 7: 건식 전극 (보너스)
+  dryElectrodeSpeed: Math.max(300, 1200 - difficulty * 90), // 1200ms → 300ms
+  dryElectrodeRandom: difficulty > 3, // 난이도 4부터 랜덤 순서
+  dryElectrodeFadeOut: difficulty > 6, // 난이도 7부터 사라짐
+});
 
 const KPI_NAMES = {
   energy: "에너지 밀도",
@@ -714,12 +750,24 @@ function Leaderboard({ playerScore, playerKpi, onClose }) {
 // STAGE COMPONENTS (Simplified but functional)
 // ═══════════════════════════════════════════════════════════════
 
-function MixingStage({ onComplete, addScore, strategy }) {
+function MixingStage({ onComplete, addScore, strategy, difficulty = 1 }) {
   const [added, setAdded] = useState([]);
   const [mixing, setMixing] = useState(false);
   const [mixProgress, setMixProgress] = useState(0);
+  const config = getDifficultyConfig(difficulty);
   const materials = STAGES[0].materials;
   const nextIdx = added.length;
+
+  // 난이도에 따라 버튼 순서 셔플
+  const shuffledMaterials = useMemo(() => {
+    if (!config.buttonShuffle) return materials;
+    const shuffled = [...materials];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, [config.buttonShuffle]);
 
   const handleAdd = (mat, idx) => {
     if (mixing || idx !== nextIdx) return;
@@ -762,26 +810,29 @@ function MixingStage({ onComplete, addScore, strategy }) {
         )}
       </div>
       <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        {materials.map((mat, idx) => {
+        {shuffledMaterials.map((mat) => {
+          const originalIdx = materials.findIndex(m => m.id === mat.id);
           const isAdded = added.includes(mat.id);
-          const isNext = idx === nextIdx;
+          const isNext = originalIdx === nextIdx;
+          const buttonSize = config.buttonSize;
           return (
-            <button key={mat.id} onClick={() => handleAdd(mat, idx)}
+            <button key={mat.id} onClick={() => handleAdd(mat, originalIdx)}
               disabled={isAdded || mixing}
               style={{
-                padding: "12px 16px", borderRadius: 14,
+                width: buttonSize, height: buttonSize,
+                padding: "8px", borderRadius: 14,
                 border: isNext ? `3px solid ${mat.color}` : "3px solid #dfe6e9",
                 background: isAdded ? "#dfe6e9" : "#fff",
                 cursor: isAdded ? "default" : "pointer", opacity: isAdded ? 0.4 : 1,
-                fontSize: 14, fontWeight: 600, display: "flex", flexDirection: "column",
-                alignItems: "center", gap: 4,
+                fontSize: Math.max(10, buttonSize / 8), fontWeight: 600, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 2,
                 transform: isNext && !isAdded ? "scale(1.05)" : "scale(1)",
                 animation: isNext && !isAdded ? "pulse 1.5s infinite" : "none",
                 boxShadow: isNext ? `0 4px 12px ${mat.color}40` : "none",
               }}>
-              <span style={{ fontSize: 28 }}>{mat.emoji}</span>
-              <span style={{ color: "#2d3436", fontSize: 12 }}>{mat.name}</span>
-              {isNext && !isAdded && <span style={{ fontSize: 10, color: mat.color }}>▲ 다음</span>}
+              <span style={{ fontSize: Math.max(20, buttonSize / 3) }}>{mat.emoji}</span>
+              <span style={{ color: "#2d3436", fontSize: Math.max(8, buttonSize / 10) }}>{mat.name}</span>
+              {isNext && !isAdded && <span style={{ fontSize: Math.max(7, buttonSize / 12), color: mat.color }}>▲</span>}
             </button>
           );
         })}
@@ -795,32 +846,37 @@ function MixingStage({ onComplete, addScore, strategy }) {
   );
 }
 
-function CoatingStage({ onComplete, addScore }) {
+function CoatingStage({ onComplete, addScore, difficulty = 1 }) {
+  const config = getDifficultyConfig(difficulty);
   const [gauge, setGauge] = useState(0);
   const [dir, setDir] = useState(1);
   const [coatings, setCoatings] = useState(0);
   const [results, setResults] = useState([]);
   const needed = 3;
   const ivRef = useRef(null);
+  const targetSize = config.coatingTargetSize;
+  const targetStart = 50 - targetSize / 2;
+  const targetEnd = 50 + targetSize / 2;
 
   useEffect(() => {
     ivRef.current = setInterval(() => {
       setGauge(g => {
-        const next = g + dir * 2.5;
+        const next = g + dir * config.coatingBarSpeed;
         if (next >= 100 || next <= 0) setDir(d => -d);
         return clamp(next, 0, 100);
       });
     }, 30);
     return () => clearInterval(ivRef.current);
-  }, [dir]);
+  }, [dir, config.coatingBarSpeed]);
 
   const handleClick = () => {
     if (coatings >= needed) return;
+    const inTarget = gauge >= targetStart && gauge <= targetEnd;
     const diff = Math.abs(gauge - 50);
     let pts = 0, label = "";
-    if (diff < 5) { pts = 100; label = "PERFECT!"; }
-    else if (diff < 15) { pts = 60; label = "GREAT!"; }
-    else if (diff < 25) { pts = 30; label = "GOOD"; }
+    if (inTarget && diff < targetSize / 4) { pts = 100; label = "PERFECT!"; }
+    else if (inTarget) { pts = 60; label = "GREAT!"; }
+    else if (diff < targetSize * 1.5) { pts = 30; label = "GOOD"; }
     else { pts = 10; label = "MISS"; }
     addScore(pts, "stability");
     setResults([...results, { label, pts }]);
@@ -852,7 +908,7 @@ function CoatingStage({ onComplete, addScore }) {
         width: "88%", maxWidth: 380, height: 36, margin: "0 auto 12px",
         background: "#2d3436", borderRadius: 18, position: "relative", overflow: "hidden",
       }}>
-        <div style={{ position: "absolute", left: "40%", width: "20%", height: "100%", background: "#00b89422", borderLeft: "2px dashed #00b894", borderRight: "2px dashed #00b894" }} />
+        <div style={{ position: "absolute", left: `${targetStart}%`, width: `${targetSize}%`, height: "100%", background: "#00b89422", borderLeft: "2px dashed #00b894", borderRight: "2px dashed #00b894" }} />
         <div style={{
           position: "absolute", left: `${gauge}%`, top: 0, width: 4, height: "100%",
           background: "#f39c12", borderRadius: 2, transition: "left 0.03s linear", boxShadow: "0 0 8px #f39c12",
@@ -871,31 +927,43 @@ function CoatingStage({ onComplete, addScore }) {
   );
 }
 
-function PressingStage({ onComplete, addScore }) {
+function PressingStage({ onComplete, addScore, difficulty = 1 }) {
+  const config = getDifficultyConfig(difficulty);
   const [thickness, setThickness] = useState(100);
   const [pressing, setPressing] = useState(false);
   const [done, setDone] = useState(false);
-  const target = 30;
+  const [targetPos, setTargetPos] = useState(30);
   const holdRef = useRef(null);
+  const targetSize = config.pressingTargetSize;
+  const target = targetPos;
+  const targetMin = target - targetSize / 2;
+  const targetMax = target + targetSize / 2;
+
+  useEffect(() => {
+    if (config.pressingPositionRandom) {
+      setTargetPos(20 + Math.random() * 30);
+    }
+  }, [config.pressingPositionRandom]);
 
   const startPress = () => {
     if (done) return;
     setPressing(true);
-    holdRef.current = setInterval(() => setThickness(t => Math.max(0, t - 1)), 30);
+    holdRef.current = setInterval(() => setThickness(t => Math.max(0, t - config.pressingBarSpeed)), 30);
   };
   const stopPress = () => {
     setPressing(false);
     clearInterval(holdRef.current);
+    const inTarget = thickness >= targetMin && thickness <= targetMax;
     const diff = Math.abs(thickness - target);
-    let pts = diff < 3 ? 150 : diff < 8 ? 100 : diff < 15 ? 50 : 20;
+    let pts = inTarget && diff < targetSize / 3 ? 150 : inTarget ? 100 : diff < targetSize * 1.5 ? 50 : 20;
     addScore(pts, "energy");
     setDone(true);
     setTimeout(onComplete, 800);
   };
   useEffect(() => () => clearInterval(holdRef.current), []);
 
-  const perfect = Math.abs(thickness - target) < 3;
-  const great = Math.abs(thickness - target) < 8;
+  const perfect = thickness >= targetMin && thickness <= targetMax && Math.abs(thickness - target) < targetSize / 3;
+  const great = thickness >= targetMin && thickness <= targetMax;
 
   return (
     <div style={{ textAlign: "center", padding: 16 }}>
@@ -910,7 +978,7 @@ function PressingStage({ onComplete, addScore }) {
           background: perfect ? "linear-gradient(90deg, #00b894, #55efc4)" : great ? "linear-gradient(90deg, #fdcb6e, #ffeaa7)" : "linear-gradient(90deg, #e74c3c, #fab1a0)",
           borderRadius: 3, transition: "height 0.05s, background 0.3s",
           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: "bold", color: "#2d3436",
-        }}>두께: {thickness}μm → 목표: {target}μm</div>
+        }}>두께: {Math.round(thickness)}μm → 목표: {Math.round(targetMin)}-{Math.round(targetMax)}μm</div>
         <div style={{
           position: "absolute", bottom: pressing ? 42 : 15, left: 30, width: 200, height: 36, borderRadius: 18,
           background: "linear-gradient(180deg, #636e72, #b2bec3, #636e72)", border: "2px solid #2d3436",
@@ -922,7 +990,7 @@ function PressingStage({ onComplete, addScore }) {
         background: "#2d3436", borderRadius: 10, position: "relative", overflow: "hidden",
       }}>
         <div style={{
-          position: "absolute", left: `${target - 3}%`, width: "6%", height: "100%",
+          position: "absolute", left: `${targetMin}%`, width: `${targetSize}%`, height: "100%",
           background: "#00b89444", borderLeft: "2px solid #00b894", borderRight: "2px solid #00b894",
         }} />
         <div style={{
@@ -947,69 +1015,110 @@ function PressingStage({ onComplete, addScore }) {
   );
 }
 
-function CuttingStage({ onComplete, addScore }) {
-  const [cuts, setCuts] = useState([]);
-  const [targetX, setTargetX] = useState(50);
-  const needed = 4;
+function CuttingStage({ onComplete, addScore, difficulty = 1 }) {
+  const config = getDifficultyConfig(difficulty);
+  const gridSize = config.cuttingGridSize;
+  const timeLimit = config.cuttingTimeLimit;
+  const [clickedCells, setClickedCells] = useState([]);
+  const [targetCell, setTargetCell] = useState(null);
+  const [startTime, setStartTime] = useState(null);
+  const totalCells = gridSize * gridSize;
+  const needed = Math.min(totalCells, gridSize + 2);
 
-  useEffect(() => { setTargetX(20 + Math.random() * 60); }, [cuts.length]);
+  useEffect(() => {
+    const newTarget = Math.floor(Math.random() * totalCells);
+    setTargetCell(newTarget);
+    setStartTime(Date.now());
+  }, [clickedCells.length, totalCells]);
 
-  const handleCut = (e) => {
-    if (cuts.length >= needed) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const diff = Math.abs(x - targetX);
-    let pts = diff < 5 ? 100 : diff < 12 ? 60 : diff < 20 ? 30 : 10;
+  const handleCellClick = (index) => {
+    if (clickedCells.includes(index) || clickedCells.length >= needed) return;
+    const elapsed = (Date.now() - startTime) / 1000;
+    const isCorrect = index === targetCell;
+    const isFast = elapsed < timeLimit;
+    let pts = 0;
+    if (isCorrect && isFast) pts = 100;
+    else if (isCorrect) pts = 60;
+    else if (isFast) pts = 30;
+    else pts = 10;
+
     addScore(pts, "productivity");
-    const nc = [...cuts, { x, pts, target: targetX }];
-    setCuts(nc);
-    if (nc.length >= needed) setTimeout(onComplete, 700);
+    const newClicked = [...clickedCells, index];
+    setClickedCells(newClicked);
+    if (newClicked.length >= needed) setTimeout(onComplete, 700);
   };
 
   return (
     <div style={{ textAlign: "center", padding: 16 }}>
       <div style={{ fontSize: 13, color: "#636e72", marginBottom: 12, fontWeight: 600 }}>
-        ✂️ 빨간 선에 맞춰 클릭하세요! ({cuts.length}/{needed})
+        ✂️ 빨간색 셀을 {timeLimit.toFixed(1)}초 안에 클릭! ({clickedCells.length}/{needed})
       </div>
-      <div onClick={handleCut} style={{
-        width: "90%", maxWidth: 400, height: 100, margin: "0 auto 16px",
-        background: "linear-gradient(180deg, #dfe6e9, #b2bec3)", borderRadius: 10,
-        border: "2px solid #95a5a6", position: "relative", cursor: "crosshair", overflow: "hidden",
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+        gap: 4,
+        maxWidth: 360,
+        margin: "0 auto",
       }}>
-        {/* Target line */}
-        <div style={{
-          position: "absolute", left: `${targetX}%`, top: 0, width: 2, height: "100%",
-          background: "#e74c3c", boxShadow: "0 0 8px #e74c3c88",
-          animation: "pulse 1s infinite",
-        }} />
-        {/* Cut marks */}
-        {cuts.map((c, i) => (
-          <div key={i} style={{
-            position: "absolute", left: `${c.x}%`, top: 0, width: 2, height: "100%",
-            background: c.pts >= 60 ? "#00b894" : "#f39c12",
-          }}>
-            <span style={{
-              position: "absolute", top: -16, left: -12, fontSize: 10, fontWeight: 700,
-              color: c.pts >= 60 ? "#00b894" : "#f39c12",
-            }}>+{c.pts}</span>
-          </div>
-        ))}
+        {Array.from({ length: totalCells }, (_, i) => {
+          const isTarget = i === targetCell;
+          const isClicked = clickedCells.includes(i);
+          return (
+            <div
+              key={i}
+              onClick={() => handleCellClick(i)}
+              style={{
+                aspectRatio: "1",
+                background: isClicked ? "#95a5a6" : isTarget ? "#e74c3c" : "#dfe6e9",
+                borderRadius: 6,
+                cursor: isClicked ? "default" : "pointer",
+                border: isTarget ? "2px solid #c0392b" : "2px solid #95a5a6",
+                boxShadow: isTarget ? "0 0 8px #e74c3c88" : "none",
+                animation: isTarget ? "pulse 1s infinite" : "none",
+                transition: "all 0.2s",
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function AssemblyStage({ onComplete, addScore }) {
+function AssemblyStage({ onComplete, addScore, difficulty = 1 }) {
+  const config = getDifficultyConfig(difficulty);
+  const baseLayers = STAGES[4].layers;
+  const totalLayers = config.assemblyLayers;
   const [placed, setPlaced] = useState([]);
-  const layers = STAGES[4].layers;
   const nextIdx = placed.length;
 
+  const layers = useMemo(() => {
+    const extended = [];
+    for (let i = 0; i < totalLayers; i++) {
+      extended.push({ ...baseLayers[i % baseLayers.length], id: `layer_${i}` });
+    }
+    if (config.assemblyShuffle) {
+      const shuffled = [...extended];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+    return extended;
+  }, [config.assemblyLayers, config.assemblyShuffle]);
+
+  const correctSequence = useMemo(() => {
+    return Array.from({ length: totalLayers }, (_, i) => baseLayers[i % baseLayers.length]);
+  }, [totalLayers]);
+
   const handlePlace = (layer, idx) => {
-    if (idx !== nextIdx) return;
+    const correctLayer = correctSequence[nextIdx];
+    if (layer.name !== correctLayer.name) return;
     const newPlaced = [...placed, layer.id];
     setPlaced(newPlaced);
     addScore(40, "stability");
-    if (newPlaced.length === 4) { addScore(80, "stability"); setTimeout(onComplete, 700); }
+    if (newPlaced.length === totalLayers) { addScore(80, "stability"); setTimeout(onComplete, 700); }
   };
 
   return (
@@ -1059,93 +1168,166 @@ function AssemblyStage({ onComplete, addScore }) {
   );
 }
 
-function ActivationStage({ onComplete, addScore }) {
-  const [phase, setPhase] = useState("inject"); // inject -> charge
-  const [charge, setCharge] = useState(0);
-  const [injected, setInjected] = useState(false);
+function ActivationStage({ onComplete, addScore, difficulty = 1 }) {
+  const config = getDifficultyConfig(difficulty);
+  const [level, setLevel] = useState(0);
+  const [injecting, setInjecting] = useState(false);
+  const [overflow, setOverflow] = useState(false);
+  const targetLevel = 100;
 
-  const handleInject = () => {
-    setInjected(true);
-    addScore(50, "stability");
-    setTimeout(() => setPhase("charge"), 600);
+  const startInject = () => {
+    if (overflow || level >= targetLevel) return;
+    setInjecting(true);
+  };
+
+  const stopInject = () => {
+    setInjecting(false);
   };
 
   useEffect(() => {
-    if (phase !== "charge") return;
+    if (!injecting) return;
     const iv = setInterval(() => {
-      setCharge(c => {
-        if (c >= 100) {
-          clearInterval(iv);
-          return 100;
+      setLevel(l => {
+        const newLevel = l + config.injectionSpeed;
+        if (config.injectionOverflowPenalty && newLevel > targetLevel + 10) {
+          setOverflow(true);
+          setInjecting(false);
+          return newLevel;
         }
-        return c + 2;
+        return Math.min(newLevel, 120);
       });
     }, 50);
     return () => clearInterval(iv);
-  }, [phase]);
+  }, [injecting, config.injectionSpeed, config.injectionOverflowPenalty]);
 
   useEffect(() => {
-    if (charge >= 100) {
-      addScore(100, "energy");
+    if (overflow) {
+      addScore(-50, "stability");
+      setTimeout(() => {
+        setLevel(0);
+        setOverflow(false);
+      }, 1000);
+    }
+  }, [overflow]);
+
+  useEffect(() => {
+    if (level >= targetLevel - 5 && level <= targetLevel + 5 && !injecting) {
+      addScore(150, "energy");
       setTimeout(onComplete, 500);
     }
-  }, [charge]);
+  }, [level, injecting]);
+
+  const isNearTarget = level >= targetLevel - 5 && level <= targetLevel + 5;
+  const isOverfilled = level > targetLevel + 5;
 
   return (
     <div style={{ textAlign: "center", padding: 16 }}>
-      {phase === "inject" ? (
-        <>
-          <div style={{ fontSize: 48, marginBottom: 16, animation: injected ? "pulse 0.5s" : "none" }}>
-            {injected ? "✅" : "🧪"}
-          </div>
-          <div style={{ fontSize: 13, color: "#636e72", marginBottom: 16 }}>전해액을 주입하세요!</div>
-          <button onClick={handleInject} disabled={injected}
-            style={{
-              padding: "14px 44px", fontSize: 16, fontWeight: "bold", borderRadius: 28, border: "none",
-              background: injected ? "#95a5a6" : "linear-gradient(135deg, #3498db, #2980b9)",
-              color: "#fff", cursor: injected ? "default" : "pointer",
-            }}>
-            {injected ? "주입 완료!" : "💧 전해액 주입"}
-          </button>
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>⚡</div>
-          <div style={{ fontSize: 13, color: "#636e72", marginBottom: 16 }}>충전 중... {charge}%</div>
-          <div style={{
-            width: "80%", maxWidth: 300, height: 24, margin: "0 auto",
-            background: "#2d3436", borderRadius: 12, overflow: "hidden",
+      <div style={{ fontSize: 48, marginBottom: 12 }}>
+        {overflow ? "💥" : isNearTarget ? "✅" : "🧪"}
+      </div>
+      <div style={{ fontSize: 13, color: "#636e72", marginBottom: 16 }}>
+        {overflow ? "넘쳤습니다! 다시 시도..." : `전해액 주입: ${Math.round(level)}% / ${targetLevel}%`}
+      </div>
+      <div style={{
+        width: "80%", maxWidth: 300, height: 40, margin: "0 auto 16px",
+        background: "#2d3436", borderRadius: 12, overflow: "hidden", position: "relative",
+      }}>
+        <div style={{
+          position: "absolute", left: `${targetLevel - 5}%`, width: "10%", height: "100%",
+          background: "#00b89433", borderLeft: "2px dashed #00b894", borderRight: "2px dashed #00b894",
+        }} />
+        <div style={{
+          width: `${Math.min(level, 100)}%`, height: "100%", borderRadius: 12,
+          background: overflow ? "#e74c3c" : isNearTarget ? "#00b894" : isOverfilled ? "#f39c12" : "#3498db",
+          transition: "width 0.05s, background 0.3s",
+        }} />
+      </div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <button
+          onMouseDown={startInject}
+          onMouseUp={stopInject}
+          onMouseLeave={stopInject}
+          onTouchStart={startInject}
+          onTouchEnd={stopInject}
+          disabled={overflow || isNearTarget}
+          style={{
+            padding: "12px 32px", fontSize: 15, fontWeight: "bold", borderRadius: 28, border: "none",
+            background: overflow || isNearTarget ? "#95a5a6" : injecting ? "#e74c3c" : "linear-gradient(135deg, #3498db, #2980b9)",
+            color: "#fff", cursor: overflow || isNearTarget ? "default" : "pointer",
+            transform: injecting ? "scale(0.96)" : "scale(1)", transition: "all 0.1s",
           }}>
-            <div style={{
-              width: `${charge}%`, height: "100%", borderRadius: 12,
-              background: charge >= 80 ? "linear-gradient(90deg, #00b894, #55efc4)" : "linear-gradient(90deg, #f39c12, #fdcb6e)",
-              transition: "width 0.1s",
-            }} />
-          </div>
-        </>
-      )}
+          {overflow ? "❌ 실패" : isNearTarget ? "✅ 완료" : injecting ? "💧 주입 중..." : "💧 누르세요"}
+        </button>
+        {config.injectionHasStop && (
+          <button
+            onClick={stopInject}
+            disabled={!injecting}
+            style={{
+              padding: "12px 24px", fontSize: 15, fontWeight: "bold", borderRadius: 28,
+              border: "2px solid #e74c3c",
+              background: injecting ? "#e74c3c" : "transparent",
+              color: injecting ? "#fff" : "#e74c3c",
+              cursor: injecting ? "pointer" : "default",
+            }}>
+            🛑 STOP
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function DryElectrodeStage({ onComplete, addScore }) {
+function DryElectrodeStage({ onComplete, addScore, difficulty = 1 }) {
+  const config = getDifficultyConfig(difficulty);
   const [powder, setPowder] = useState([]);
-  const spots = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
-    x: 10 + (i % 3) * 32, y: 20 + Math.floor(i / 3) * 40,
+  const [activeSpot, setActiveSpot] = useState(null);
+  const [visibleSpots, setVisibleSpots] = useState([]);
+  const totalSpots = 6;
+
+  const spots = useMemo(() => Array.from({ length: totalSpots }, (_, i) => ({
+    x: 10 + (i % 3) * 32, y: 20 + Math.floor(i / 3) * 40, id: i,
   })), []);
 
-  const handleSpot = (i) => {
-    if (powder.includes(i)) return;
-    const np = [...powder, i];
+  const sequence = useMemo(() => {
+    if (config.dryElectrodeRandom) {
+      const arr = Array.from({ length: totalSpots }, (_, i) => i);
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    return Array.from({ length: totalSpots }, (_, i) => i);
+  }, [config.dryElectrodeRandom]);
+
+  useEffect(() => {
+    if (powder.length >= totalSpots) return;
+    const nextSpotId = sequence[powder.length];
+    setActiveSpot(nextSpotId);
+
+    if (config.dryElectrodeFadeOut) {
+      setVisibleSpots([nextSpotId]);
+      const timer = setTimeout(() => {
+        setVisibleSpots([]);
+      }, config.dryElectrodeSpeed);
+      return () => clearTimeout(timer);
+    } else {
+      setVisibleSpots([nextSpotId]);
+    }
+  }, [powder.length, sequence, config.dryElectrodeFadeOut, config.dryElectrodeSpeed]);
+
+  const handleSpot = (spotId) => {
+    if (spotId !== activeSpot || powder.includes(spotId)) return;
+    const np = [...powder, spotId];
     setPowder(np);
     addScore(35, "productivity");
-    if (np.length >= spots.length) { addScore(100, "energy"); setTimeout(onComplete, 700); }
+    if (np.length >= totalSpots) { addScore(100, "energy"); setTimeout(onComplete, 700); }
   };
 
   return (
     <div style={{ textAlign: "center", padding: 20, background: "#1a1a2e", borderRadius: 12 }}>
       <h2 style={{ color: "#fdcb6e", marginBottom: 16, fontSize: 18 }}>
-        🌟 건식 전극 공정 - 분말 코팅
+        🌟 건식 전극 공정 - 분말 코팅 ({powder.length}/{totalSpots})
       </h2>
       <div style={{
         display: "grid",
@@ -1154,24 +1336,33 @@ function DryElectrodeStage({ onComplete, addScore }) {
         maxWidth: 400,
         margin: "0 auto 20px"
       }}>
-        {spots.map((s, i) => (
-          <button
-            key={i}
-            onClick={() => handleSpot(i)}
-            style={{
-              padding: "20px",
-              fontSize: 24,
-              borderRadius: 12,
-              border: powder.includes(i) ? "3px solid #00b894" : "3px dashed #e17055",
-              background: powder.includes(i) ? "#00b894" : "#2d2d44",
-              color: "#fff",
-              cursor: powder.includes(i) ? "default" : "pointer",
-              transition: "all 0.3s",
-            }}
-          >
-            {powder.includes(i) ? "✅" : "🔘"}
-          </button>
-        ))}
+        {spots.map((s) => {
+          const isCompleted = powder.includes(s.id);
+          const isActive = s.id === activeSpot;
+          const isVisible = visibleSpots.includes(s.id) || !config.dryElectrodeFadeOut;
+
+          return (
+            <button
+              key={s.id}
+              onClick={() => handleSpot(s.id)}
+              style={{
+                padding: "20px",
+                fontSize: 24,
+                borderRadius: 12,
+                border: isCompleted ? "3px solid #00b894" : isActive ? "3px solid #fdcb6e" : "3px dashed #e17055",
+                background: isCompleted ? "#00b894" : isActive && isVisible ? "#e17055" : "#2d2d44",
+                color: "#fff",
+                cursor: isCompleted ? "default" : "pointer",
+                transition: "all 0.2s",
+                opacity: isCompleted ? 1 : isVisible ? 1 : 0.3,
+                animation: isActive && isVisible ? "pulse 0.5s infinite" : "none",
+                boxShadow: isActive && isVisible ? "0 0 20px #fdcb6e" : "none",
+              }}
+            >
+              {isCompleted ? "✅" : isActive && isVisible ? "🎯" : "🔘"}
+            </button>
+          );
+        })}
       </div>
       <div style={{
         fontSize: 16,
@@ -1208,6 +1399,7 @@ export default function BatteryGame() {
   const [ownedUpgrades, setOwnedUpgrades] = useState([]);
   const [strategy, setStrategy] = useState("balanced");
   const [highScore, setHighScore] = useState(0);
+  const [difficulty, setDifficulty] = useState(1); // 난이도 1-10
 
   // KPI state
   const [currentKpi, setCurrentKpi] = useState({ energy: 50, stability: 50, productivity: 50 });
@@ -1249,6 +1441,7 @@ export default function BatteryGame() {
       const newLives = l - 1;
       if (newLives <= 0) {
         saveGameData();
+        setDifficulty(1); // 게임 오버 시 난이도 1로 초기화
         setScreen("gameover");
       }
       return Math.max(0, newLives);
@@ -1354,7 +1547,12 @@ export default function BatteryGame() {
       setTimer(GAME_CONFIG.STAGE_TIME_LIMIT);
       setShowStageIntro(true);
     } else {
+      // 게임 클리어 시 난이도 상승
+      if (difficulty < GAME_CONFIG.MAX_DIFFICULTY) {
+        setDifficulty(d => d + 1);
+      }
       if (score > highScore) setHighScore(score);
+      saveGameData();
       setScreen("clear");
     }
   };
@@ -1380,6 +1578,7 @@ export default function BatteryGame() {
     setInspectionEvent(null);
     if (lives <= 1) {
       saveGameData();
+      setDifficulty(1); // 게임 오버 시 난이도 1로 초기화
       setScreen("gameover");
       return;
     }
@@ -1508,6 +1707,36 @@ export default function BatteryGame() {
             ))}
           </div>
 
+          {/* Difficulty Selector */}
+          <div style={{ marginBottom: 20, padding: "12px 16px", background: "#161b22", borderRadius: 12, border: "1px solid #30363d" }}>
+            <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 8, textAlign: "center" }}>난이도 선택</div>
+            <div style={{ display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap" }}>
+              {Array.from({ length: 10 }, (_, i) => i + 1).map(level => (
+                <button
+                  key={level}
+                  onClick={() => setDifficulty(level)}
+                  style={{
+                    padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                    border: difficulty === level ? "2px solid #00b894" : "1px solid #30363d",
+                    background: difficulty === level ? "#00b89422" : "#21262d",
+                    color: difficulty === level ? "#00b894" : "#8b949e",
+                    cursor: "pointer", transition: "all 0.2s",
+                  }}
+                  onMouseEnter={e => { if (difficulty !== level) { e.target.style.borderColor = "#00b89466"; e.target.style.color = "#e6edf3"; } }}
+                  onMouseLeave={e => { if (difficulty !== level) { e.target.style.borderColor = "#30363d"; e.target.style.color = "#8b949e"; } }}
+                >
+                  Lv.{level}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: 9, color: "#484f58", marginTop: 6, textAlign: "center" }}>
+              {difficulty <= 3 && "🟢 쉬움: 초보자 추천"}
+              {difficulty > 3 && difficulty <= 6 && "🟡 보통: 적당한 도전"}
+              {difficulty > 6 && difficulty <= 8 && "🟠 어려움: 숙련자용"}
+              {difficulty > 8 && "🔴 매우 어려움: 전문가 전용"}
+            </div>
+          </div>
+
           {/* Stage badges */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 24 }}>
             {[...STAGES, BONUS_STAGE].map((s, i) => (
@@ -1631,7 +1860,15 @@ export default function BatteryGame() {
             </div>
           ))}
 
-          <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
+          {/* 난이도 상승 알림 */}
+          <div style={{
+            marginTop: 16, padding: "12px 16px", background: "#00b89422", borderRadius: 12,
+            border: "1px solid #00b89466", fontSize: 13, color: "#00b894", fontWeight: 600,
+          }}>
+            🎉 클리어! 다음 레벨 난이도: Lv.{difficulty}
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={() => setShowRedash(true)} style={{
               padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20, border: "none",
               background: "linear-gradient(135deg, #e74c3c, #f39c12)", color: "#fff", cursor: "pointer",
@@ -1643,7 +1880,7 @@ export default function BatteryGame() {
             <button onClick={startGame} style={{
               padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20, border: "none",
               background: "linear-gradient(135deg, #00b894, #00cec9)", color: "#fff", cursor: "pointer",
-            }}>🔄 재도전</button>
+            }}>▶ 다음 레벨</button>
             <button onClick={() => setScreen("title")} style={{
               padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20,
               background: "transparent", color: "#8b949e", cursor: "pointer", border: "1px solid #30363d",
@@ -1685,9 +1922,18 @@ export default function BatteryGame() {
           <p style={{ fontSize: 13, color: "#8b949e", marginBottom: 20 }}>
             Stage {currentStage + 1}에서 라이프가 소진되었습니다
           </p>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#f39c12", marginBottom: 20 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#f39c12", marginBottom: 16 }}>
             최종 점수: {score}점
           </div>
+
+          {/* 난이도 초기화 알림 */}
+          <div style={{
+            marginBottom: 20, padding: "12px 16px", background: "#e74c3c22", borderRadius: 12,
+            border: "1px solid #e74c3c66", fontSize: 12, color: "#e74c3c", fontWeight: 600,
+          }}>
+            ⚠️ 난이도가 Lv.1로 초기화되었습니다
+          </div>
+
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <button onClick={() => setShowRedash(true)} style={{
               padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20, border: "none",
@@ -1696,7 +1942,7 @@ export default function BatteryGame() {
             <button onClick={startGame} style={{
               padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20, border: "none",
               background: "linear-gradient(135deg, #00b894, #00cec9)", color: "#fff", cursor: "pointer",
-            }}>🔄 재도전</button>
+            }}>▶ 처음부터</button>
             <button onClick={() => setScreen("title")} style={{
               padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20,
               background: "transparent", color: "#8b949e", cursor: "pointer", border: "1px solid #30363d",
@@ -1888,13 +2134,13 @@ export default function BatteryGame() {
           padding: "20px 14px", maxWidth: 520, width: "100%",
           boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
         }}>
-          {!showStageIntro && !inspectionEvent && currentStage === 0 && <MixingStage onComplete={handleStageComplete} addScore={addScore} strategy={strategy} />}
-          {!showStageIntro && !inspectionEvent && currentStage === 1 && <CoatingStage onComplete={handleStageComplete} addScore={addScore} />}
-          {!showStageIntro && !inspectionEvent && currentStage === 2 && <PressingStage onComplete={handleStageComplete} addScore={addScore} />}
-          {!showStageIntro && !inspectionEvent && currentStage === 3 && <CuttingStage onComplete={handleStageComplete} addScore={addScore} />}
-          {!showStageIntro && !inspectionEvent && currentStage === 4 && <AssemblyStage onComplete={handleStageComplete} addScore={addScore} />}
-          {!showStageIntro && !inspectionEvent && currentStage === 5 && <ActivationStage onComplete={handleStageComplete} addScore={addScore} />}
-          {!showStageIntro && !inspectionEvent && currentStage === 6 && <DryElectrodeStage onComplete={handleStageComplete} addScore={addScore} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 0 && <MixingStage onComplete={handleStageComplete} addScore={addScore} strategy={strategy} difficulty={difficulty} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 1 && <CoatingStage onComplete={handleStageComplete} addScore={addScore} difficulty={difficulty} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 2 && <PressingStage onComplete={handleStageComplete} addScore={addScore} difficulty={difficulty} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 3 && <CuttingStage onComplete={handleStageComplete} addScore={addScore} difficulty={difficulty} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 4 && <AssemblyStage onComplete={handleStageComplete} addScore={addScore} difficulty={difficulty} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 5 && <ActivationStage onComplete={handleStageComplete} addScore={addScore} difficulty={difficulty} />}
+          {!showStageIntro && !inspectionEvent && currentStage === 6 && <DryElectrodeStage onComplete={handleStageComplete} addScore={addScore} difficulty={difficulty} />}
         </div>
       </div>
 
