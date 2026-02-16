@@ -40,43 +40,56 @@ Claude와 함께 만든 **브라우저 기반 배터리 공장 운영 게임**�
 
 ## 기술 스택
 
-프로젝트 구현에 사용된 일반적인 웹 기술 예시입니다.
+### Frontend
+- **React 18** - UI 컴포넌트 라이브러리
+- **Vite 6** - 빠른 개발 서버 및 빌드 도구
+- **Vanilla CSS** - 인라인 스타일링
 
-- HTML
-- CSS
-- JavaScript
-
-(필요 시 프레임워크/라이브러리 정보를 추가하세요.)
+### 개발 환경
+- **Node.js** - JavaScript 런타임
+- **npm** - 패키지 관리자
 
 ---
 
-## 권장 디렉터리 구조
+## 디렉터리 구조
 
 ```bash
 09_battery-factory/
-├── README.md
-├── index.html
-├── style.css
-└── script.js
+├── frontend/              # 게임 프론트엔드
+│   ├── src/
+│   │   ├── main.jsx      # 애플리케이션 진입점
+│   │   └── BatteryGame.jsx  # 메인 게임 컴포넌트
+│   ├── public/           # 정적 파일
+│   ├── index.html        # HTML 엔트리
+│   ├── package.json      # 의존성 목록
+│   └── vite.config.js    # Vite 설정
+├── backend/              # 백엔드 (선택사항)
+├── docs/                 # 문서
+│   └── GAME_GUIDE.md     # 상세 게임 가이드
+└── README.md             # 프로젝트 개요
 ```
-
-파일명이 다르다면 실제 구조에 맞게 수정해 주세요.
 
 ---
 
 ## ▶️ 실행 방법
 
-정적 웹 게임 기준으로, 아래 중 하나로 실행할 수 있습니다.
+이 게임은 **Vite + React** 기반으로 개발되었습니다.
 
-### 1) 파일 바로 실행
-- `index.html`을 브라우저에서 직접 열기
-
-### 2) 로컬 서버 실행 (권장)
+### 1단계: 의존성 설치
 ```bash
-cd 09_battery-factory
-python -m http.server 8000
+cd 09_battery-factory/frontend
+npm install
 ```
-브라우저에서 `http://localhost:8000` 접속
+
+### 2단계: 개발 서버 실행
+```bash
+npm run dev
+```
+
+### 3단계: 브라우저 접속
+서버가 시작되면 터미널에 표시되는 주소로 접속:
+- 기본: `http://localhost:3000/`
+- 포트가 사용 중이면 자동으로 3001, 3002 등으로 변경됩니다
 
 ---
 
@@ -86,3 +99,5 @@ python -m http.server 8000
 - 랜덤 이벤트(정전, 긴급 주문, 자재 할인)
 - 랭킹/최고 점수 로컬 저장
 - 모바일 UI 최적화git reset --mixed HEAD~1
+
+## Redash, Docker 가이드는 docs 폴더를 확인

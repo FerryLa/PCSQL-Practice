@@ -21,7 +21,13 @@
       "Bash(git init:*)",
       "Bash(git branch:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python -m http.server:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install)",
+      "Bash(npx eslint:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(curl:*)"
     ]
   }
 }

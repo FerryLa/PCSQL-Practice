@@ -167,544 +167,62 @@ function SparkLine({ data, color = "#00b894", width = 100, height = 28, label })
 // REDASH DASHBOARD - CORE IN-GAME MECHANIC
 // ═══════════════════════════════════════════════════════════════
 
+// TODO: RedashDashboard 컴포넌트 JSX 구조 수정 필요 (임시로 간소화)
 function RedashDashboard({ gameData, isOpen, onClose, onDecision, upgrades }) {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [selectedKpi, setSelectedKpi] = useState(null);
-  const insightBoost = upgrades.includes("redash_pro") ? 1.2 : 1;
-
-  const { kpiHistory, stageResults, currentKpi, coins, defectLog, yieldRate } = gameData;
-
-  const overallScore = useMemo(() => {
-    const e = currentKpi.energy * 0.4;
-    const s = currentKpi.stability * 0.35;
-    const p = currentKpi.productivity * 0.25;
-    return Math.round((e + s + p) * insightBoost);
-  }, [currentKpi, insightBoost]);
-
-  const bottleneck = useMemo(() => {
-    const vals = [
-      { key: "energy", val: currentKpi.energy },
-      { key: "stability", val: currentKpi.stability },
-      { key: "productivity", val: currentKpi.productivity },
-    ];
-    return vals.sort((a, b) => a.val - b.val)[0];
-  }, [currentKpi]);
-
-  const recommendations = useMemo(() => {
-    const recs = [];
-    if (currentKpi.stability < 40) recs.push({ icon: "⚠️", text: "안전성 위험! 조립 공정에 집중하세요", priority: "high" });
-    if (currentKpi.energy < 50) recs.push({ icon: "⚡", text: "에너지 밀도 부족. 소재 혼합 최적화 필요", priority: "mid" });
-    if (currentKpi.productivity < 45) recs.push({ icon: "⚙️", text: "생산성 저하. 절단/코팅 속도 개선 권장", priority: "mid" });
-    if (defectLog.length > 3) recs.push({ icon: "🔍", text: "불량률 상승. AI 검사 모듈 도입 검토", priority: "high" });
-    if (yieldRate < 70) recs.push({ icon: "📉", text: "수율 70% 미만. 공정 파라미터 재조정", priority: "high" });
-    if (recs.length === 0) recs.push({ icon: "✅", text: "공정 최적 상태입니다!", priority: "low" });
-    return recs;
-  }, [currentKpi, defectLog, yieldRate]);
-
   if (!isOpen) return null;
-
-  const [redashUrl, setRedashUrl] = useState(
-    localStorage?.getItem?.("redash_url") || ""
-  );
-  const [redashInput, setRedashInput] = useState(redashUrl);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [iframeError, setIframeError] = useState(false);
-
-  const saveRedashUrl = (url) => {
-    const cleaned = url.trim().replace(/\/+$/, "");
-    setRedashUrl(cleaned);
-    try { localStorage?.setItem?.("redash_url", cleaned); } catch {}
-  };
-
-  const tabs = [
-    { id: "overview", name: "종합 대시보드", icon: "📊" },
-    { id: "kpi", name: "KPI 분석", icon: "📈" },
-    { id: "defect", name: "불량 분석", icon: "🔍" },
-    { id: "strategy", name: "전략 추천", icon: "🧠" },
-    { id: "redash", name: "Redash Live", icon: "🔴" },
-  ];
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 10000,
-      background: "rgba(10,10,25,0.85)", backdropFilter: "blur(8px)",
+      background: "rgba(10,10,25,0.95)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      animation: "fadeIn 0.3s ease-out",
     }}>
       <div style={{
-        width: "95%", maxWidth: 680, maxHeight: "90vh",
+        width: "80%", maxWidth: 600, padding: 40,
         background: "linear-gradient(145deg, #0d1117, #161b22)",
-        borderRadius: 20, overflow: "hidden",
-        border: "1px solid #30363d",
-        boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,184,148,0.1)",
-        display: "flex", flexDirection: "column",
+        borderRadius: 20, border: "1px solid #30363d",
+        boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        textAlign: "center",
       }}>
-        {/* Header */}
+        <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+        <h2 style={{ color: "#e6edf3", marginBottom: 12, fontSize: 24 }}>
+          대시보드 (준비중)
+        </h2>
+        <p style={{ color: "#8b949e", marginBottom: 24, lineHeight: 1.6 }}>
+          KPI 분석, 불량 분석, 전략 추천 등의 기능이<br/>
+          곧 추가될 예정입니다.
+        </p>
         <div style={{
-          padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
-          borderBottom: "1px solid #30363d",
-          background: "linear-gradient(90deg, rgba(0,184,148,0.08), transparent)",
+          padding: 16, background: "#161b22", borderRadius: 12,
+          border: "1px solid #30363d", marginBottom: 24,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: "linear-gradient(135deg, #e74c3c, #f39c12)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16, fontWeight: 800, color: "#fff",
-            }}>R</div>
+          <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 8 }}>현재 KPI</div>
+          <div style={{ display: "flex", justifyContent: "space-around" }}>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#e6edf3", letterSpacing: 0.5 }}>
-                Redash 품질관리 대시보드
-              </div>
-              <div style={{ fontSize: 10, color: "#8b949e" }}>
-                실시간 공정 분석 · 수율: {yieldRate.toFixed(1)}%
-              </div>
+              <div style={{ fontSize: 20, color: "#e74c3c" }}>⚡</div>
+              <div style={{ fontSize: 11, color: "#8b949e" }}>에너지: {gameData.currentKpi.energy}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 20, color: "#3498db" }}>🛡️</div>
+              <div style={{ fontSize: 11, color: "#8b949e" }}>안전성: {gameData.currentKpi.stability}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 20, color: "#2ecc71" }}>⚙️</div>
+              <div style={{ fontSize: 11, color: "#8b949e" }}>생산성: {gameData.currentKpi.productivity}</div>
             </div>
           </div>
-          <button onClick={onClose} style={{
-            background: "#21262d", border: "1px solid #30363d", borderRadius: 8,
-            color: "#8b949e", fontSize: 18, cursor: "pointer", padding: "4px 10px",
-          }}>✕</button>
         </div>
-
-        {/* Tabs */}
-        <div style={{
-          display: "flex", borderBottom: "1px solid #21262d",
-          background: "#0d1117", padding: "0 12px",
-        }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              style={{
-                padding: "10px 14px", border: "none", cursor: "pointer",
-                background: activeTab === t.id ? "#161b22" : "transparent",
-                borderBottom: activeTab === t.id ? "2px solid #00b894" : "2px solid transparent",
-                color: activeTab === t.id ? "#e6edf3" : "#8b949e",
-                fontSize: 12, fontWeight: 600,
-                transition: "all 0.2s",
-              }}>
-              {t.icon} {t.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
-          {activeTab === "overview" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Overall Score */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 16, padding: 16,
-                background: "#161b22", borderRadius: 12, border: "1px solid #30363d",
-              }}>
-                <div style={{
-                  width: 72, height: 72, borderRadius: "50%",
-                  background: `conic-gradient(#00b894 ${overallScore * 3.6}deg, #21262d ${overallScore * 3.6}deg)`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: "50%", background: "#0d1117",
-                    display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column",
-                  }}>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: "#00b894" }}>{overallScore}</span>
-                    <span style={{ fontSize: 8, color: "#8b949e" }}>SCORE</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#e6edf3", marginBottom: 8 }}>종합 배터리 품질</div>
-                  {Object.entries(KPI_NAMES).map(([k, name]) => (
-                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, color: "#8b949e", width: 52 }}>{KPI_ICONS[k]} {name}</span>
-                      <div style={{ flex: 1, height: 6, background: "#21262d", borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{
-                          width: `${currentKpi[k]}%`, height: "100%",
-                          background: KPI_COLORS[k], borderRadius: 3,
-                          transition: "width 0.5s",
-                        }} />
-                      </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: KPI_COLORS[k], width: 28, textAlign: "right" }}>
-                        {Math.round(currentKpi[k])}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* KPI Sparklines */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                {Object.entries(KPI_NAMES).map(([k, name]) => (
-                  <div key={k} style={{
-                    padding: 12, background: "#161b22", borderRadius: 10,
-                    border: "1px solid #30363d",
-                  }}>
-                    <div style={{ fontSize: 10, color: "#8b949e", marginBottom: 4 }}>{KPI_ICONS[k]} {name}</div>
-                    <SparkLine data={kpiHistory[k] || [0]} color={KPI_COLORS[k]} width={80} height={24} label />
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottleneck Alert */}
-              <div style={{
-                padding: 12, borderRadius: 10,
-                background: `${KPI_COLORS[bottleneck.key]}11`,
-                border: `1px solid ${KPI_COLORS[bottleneck.key]}33`,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: KPI_COLORS[bottleneck.key] }}>
-                  ⚠️ 병목 지점: {KPI_ICONS[bottleneck.key]} {KPI_NAMES[bottleneck.key]} ({Math.round(bottleneck.val)}점)
-                </div>
-                <div style={{ fontSize: 10, color: "#8b949e", marginTop: 4 }}>
-                  이 KPI를 개선하면 종합 점수가 가장 크게 상승합니다
-                </div>
-              </div>
-
-              {/* Stage Performance */}
-              <div style={{
-                padding: 12, background: "#161b22", borderRadius: 10,
-                border: "1px solid #30363d",
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#e6edf3", marginBottom: 8 }}>
-                  📋 공정별 성과
-                </div>
-                {stageResults.map((r, i) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 8, marginBottom: 4,
-                    padding: "4px 8px", borderRadius: 6,
-                    background: r.rating >= 80 ? "#00b89411" : r.rating >= 50 ? "#f39c1211" : "#e74c3c11",
-                  }}>
-                    <span style={{ fontSize: 12 }}>{STAGES[i]?.icon || "🌟"}</span>
-                    <span style={{ fontSize: 10, color: "#e6edf3", flex: 1 }}>{STAGES[i]?.name || "보너스"}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: r.rating >= 80 ? "#00b894" : r.rating >= 50 ? "#f39c12" : "#e74c3c" }}>
-                      {r.rating}점
-                    </span>
-                    <span style={{ fontSize: 10 }}>{"⭐".repeat(r.stars)}</span>
-                  </div>
-                ))}
-                {stageResults.length === 0 && (
-                  <div style={{ fontSize: 10, color: "#484f58", textAlign: "center", padding: 8 }}>
-                    아직 완료된 공정이 없습니다
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "kpi" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {Object.entries(KPI_NAMES).map(([k, name]) => (
-                <div key={k} style={{
-                  padding: 14, background: "#161b22", borderRadius: 12,
-                  border: selectedKpi === k ? `2px solid ${KPI_COLORS[k]}` : "1px solid #30363d",
-                  cursor: "pointer", transition: "all 0.2s",
-                }} onClick={() => setSelectedKpi(selectedKpi === k ? null : k)}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: KPI_COLORS[k] }}>
-                      {KPI_ICONS[k]} {name}
-                    </span>
-                    <span style={{ fontSize: 22, fontWeight: 800, color: KPI_COLORS[k] }}>
-                      {Math.round(currentKpi[k])}
-                    </span>
-                  </div>
-                  <SparkLine data={kpiHistory[k] || [0]} color={KPI_COLORS[k]} width={260} height={36} />
-                  {selectedKpi === k && (
-                    <div style={{ marginTop: 10, padding: 10, background: "#0d1117", borderRadius: 8 }}>
-                      <div style={{ fontSize: 10, color: "#8b949e", marginBottom: 6 }}>
-                        📊 공정별 영향도 (이 KPI에 대한 각 공정의 기여도)
-                      </div>
-                      {STAGES.map(s => {
-                        const effect = s.kpiEffect[k] * 100;
-                        return (
-                          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                            <span style={{ fontSize: 10, width: 60, color: "#8b949e" }}>{s.icon} {s.name}</span>
-                            <div style={{ flex: 1, height: 4, background: "#21262d", borderRadius: 2 }}>
-                              <div style={{ width: `${effect}%`, height: "100%", background: KPI_COLORS[k], borderRadius: 2 }} />
-                            </div>
-                            <span style={{ fontSize: 9, color: KPI_COLORS[k], width: 28 }}>{effect.toFixed(0)}%</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div style={{
-                padding: 12, borderRadius: 10, background: "#161b22", border: "1px solid #30363d",
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#e6edf3", marginBottom: 6 }}>
-                  ⚖️ KPI 트레이드오프 맵
-                </div>
-                <div style={{ fontSize: 10, color: "#8b949e", lineHeight: 1.6 }}>
-                  • 에너지↑ = 두꺼운 전극 → 안전성↓ (열 발산 어려움)<br/>
-                  • 안전성↑ = 보수적 설계 → 에너지↓ (밀도 제한)<br/>
-                  • 생산성↑ = 공정 속도↑ → 안전성↓ (품질 검사 축소)
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "defect" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10,
-              }}>
-                <div style={{ padding: 14, background: "#161b22", borderRadius: 10, border: "1px solid #30363d", textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: yieldRate >= 80 ? "#00b894" : yieldRate >= 60 ? "#f39c12" : "#e74c3c" }}>
-                    {yieldRate.toFixed(1)}%
-                  </div>
-                  <div style={{ fontSize: 10, color: "#8b949e" }}>수율 (Yield Rate)</div>
-                </div>
-                <div style={{ padding: 14, background: "#161b22", borderRadius: 10, border: "1px solid #30363d", textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: defectLog.length > 3 ? "#e74c3c" : "#00b894" }}>
-                    {defectLog.length}건
-                  </div>
-                  <div style={{ fontSize: 10, color: "#8b949e" }}>누적 불량</div>
-                </div>
-              </div>
-              <div style={{ padding: 12, background: "#161b22", borderRadius: 10, border: "1px solid #30363d" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#e6edf3", marginBottom: 8 }}>🔍 불량 이력</div>
-                {defectLog.length === 0 ? (
-                  <div style={{ fontSize: 10, color: "#484f58", textAlign: "center", padding: 12 }}>불량 이력 없음 ✅</div>
-                ) : (
-                  defectLog.map((d, i) => (
-                    <div key={i} style={{
-                      display: "flex", alignItems: "center", gap: 8, marginBottom: 6,
-                      padding: "6px 8px", borderRadius: 6,
-                      background: d.severity === "critical" ? "#e74c3c11" : "#f39c1211",
-                      borderLeft: `3px solid ${d.severity === "critical" ? "#e74c3c" : "#f39c12"}`,
-                    }}>
-                      <span style={{ fontSize: 14 }}>{d.severity === "critical" ? "🚨" : "⚠️"}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#e6edf3" }}>{d.name}</div>
-                        <div style={{ fontSize: 9, color: "#8b949e" }}>{d.desc} · Stage {d.stage}</div>
-                      </div>
-                      <span style={{
-                        fontSize: 9, padding: "2px 6px", borderRadius: 4,
-                        background: d.resolved ? "#00b89422" : "#e74c3c22",
-                        color: d.resolved ? "#00b894" : "#e74c3c",
-                        fontWeight: 600,
-                      }}>
-                        {d.resolved ? "해결" : "미해결"}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "strategy" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ padding: 14, background: "#161b22", borderRadius: 12, border: "1px solid #30363d" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#e6edf3", marginBottom: 10 }}>
-                  🧠 AI 전략 추천
-                </div>
-                {recommendations.map((r, i) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
-                    padding: "8px 10px", borderRadius: 8,
-                    background: r.priority === "high" ? "#e74c3c11" : r.priority === "mid" ? "#f39c1211" : "#00b89411",
-                    border: `1px solid ${r.priority === "high" ? "#e74c3c33" : r.priority === "mid" ? "#f39c1233" : "#00b89433"}`,
-                  }}>
-                    <span style={{ fontSize: 16 }}>{r.icon}</span>
-                    <span style={{ fontSize: 11, color: "#e6edf3" }}>{r.text}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Decision Buttons */}
-              <div style={{ padding: 14, background: "#161b22", borderRadius: 12, border: "1px solid #00b89433" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#00b894", marginBottom: 10 }}>
-                  🎯 공정 전략 선택 (다음 스테이지에 적용)
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {[
-                    { id: "energy_focus", name: "에너지 집중", desc: "에너지↑ 안전성↓", icon: "⚡", color: "#e74c3c" },
-                    { id: "safety_focus", name: "안전 우선", desc: "안전성↑ 생산성↓", icon: "🛡️", color: "#3498db" },
-                    { id: "speed_focus", name: "생산성 극대화", desc: "생산성↑ 에너지↓", icon: "⚙️", color: "#2ecc71" },
-                    { id: "balanced", name: "균형 전략", desc: "모든 KPI 균등", icon: "⚖️", color: "#9b59b6" },
-                  ].map(s => (
-                    <button key={s.id} onClick={() => { onDecision(s.id); onClose(); }}
-                      style={{
-                        padding: "10px 8px", borderRadius: 10, cursor: "pointer",
-                        background: "#0d1117", border: `1px solid ${s.color}33`,
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = s.color; e.currentTarget.style.background = `${s.color}11`; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = `${s.color}33`; e.currentTarget.style.background = "#0d1117"; }}
-                    >
-                      <span style={{ fontSize: 20 }}>{s.icon}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: s.color }}>{s.name}</span>
-                      <span style={{ fontSize: 9, color: "#8b949e" }}>{s.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "redash" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* 연결 설정 */}
-              <div style={{
-                padding: 14, background: "#161b22", borderRadius: 12,
-                border: redashUrl ? "1px solid #00b89433" : "1px solid #f39c1233",
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#e6edf3", marginBottom: 10 }}>
-                  🔴 Redash 실시간 연결
-                </div>
-                <div style={{ fontSize: 10, color: "#8b949e", marginBottom: 10, lineHeight: 1.6 }}>
-                  Redash 대시보드의 <strong style={{ color: "#e6edf3" }}>Public URL</strong>을 입력하세요.<br/>
-                  Redash → 대시보드 → 공유(🔗) → "Public URL 활성화" → URL 복사
-                </div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <input
-                    value={redashInput}
-                    onChange={e => setRedashInput(e.target.value)}
-                    placeholder="http://localhost:5000/public/dashboards/abc123..."
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: 8,
-                      background: "#0d1117", border: "1px solid #30363d",
-                      color: "#e6edf3", fontSize: 11, outline: "none",
-                      fontFamily: "monospace",
-                    }}
-                    onFocus={e => { e.target.style.borderColor = "#00b894"; }}
-                    onBlur={e => { e.target.style.borderColor = "#30363d"; }}
-                  />
-                  <button
-                    onClick={() => { saveRedashUrl(redashInput); setIframeLoaded(false); setIframeError(false); }}
-                    style={{
-                      padding: "8px 16px", borderRadius: 8, border: "none",
-                      background: "linear-gradient(135deg, #00b894, #00cec9)",
-                      color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}>
-                    연결
-                  </button>
-                </div>
-
-                {/* 빠른 연결 프리셋 */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {[
-                    { label: "종합 대시보드", path: "/public/dashboards/" },
-                    { label: "KPI 분석", path: "/public/dashboards/" },
-                    { label: "불량 리포트", path: "/public/dashboards/" },
-                  ].map((preset, i) => (
-                    <button key={i}
-                      onClick={() => setRedashInput(`http://localhost:5000${preset.path}`)}
-                      style={{
-                        padding: "3px 8px", borderRadius: 6, border: "1px solid #30363d",
-                        background: "#21262d", color: "#8b949e", fontSize: 9,
-                        cursor: "pointer",
-                      }}>
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-
-                {redashUrl && (
-                  <div style={{
-                    marginTop: 8, padding: "4px 8px", borderRadius: 6,
-                    background: "#00b89411", border: "1px solid #00b89433",
-                    fontSize: 9, color: "#00b894", fontFamily: "monospace",
-                    wordBreak: "break-all",
-                  }}>
-                    ✅ 연결됨: {redashUrl}
-                  </div>
-                )}
-              </div>
-
-              {/* iframe 영역 */}
-              {redashUrl ? (
-                <div style={{
-                  borderRadius: 12, overflow: "hidden",
-                  border: "1px solid #30363d", position: "relative",
-                  background: "#0d1117", minHeight: 350,
-                }}>
-                  {/* 로딩 표시 */}
-                  {!iframeLoaded && !iframeError && (
-                    <div style={{
-                      position: "absolute", inset: 0, display: "flex",
-                      flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      gap: 10, zIndex: 1,
-                    }}>
-                      <div style={{
-                        width: 32, height: 32, border: "3px solid #30363d",
-                        borderTop: "3px solid #00b894", borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                      }} />
-                      <span style={{ fontSize: 11, color: "#8b949e" }}>Redash 대시보드 로딩 중...</span>
-                    </div>
-                  )}
-
-                  {/* 에러 표시 */}
-                  {iframeError && (
-                    <div style={{
-                      position: "absolute", inset: 0, display: "flex",
-                      flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      gap: 8, zIndex: 1,
-                    }}>
-                      <span style={{ fontSize: 32 }}>⚠️</span>
-                      <span style={{ fontSize: 12, color: "#e74c3c", fontWeight: 600 }}>연결 실패</span>
-                      <span style={{ fontSize: 10, color: "#8b949e", textAlign: "center", padding: "0 20px" }}>
-                        Redash 서버가 실행 중인지, URL이 정확한지 확인하세요.<br/>
-                        Public URL이 활성화되어 있어야 합니다.
-                      </span>
-                    </div>
-                  )}
-
-                  <iframe
-                    src={redashUrl}
-                    style={{
-                      width: "100%", height: 350, border: "none",
-                      opacity: iframeLoaded ? 1 : 0,
-                      transition: "opacity 0.3s",
-                    }}
-                    onLoad={() => { setIframeLoaded(true); setIframeError(false); }}
-                    onError={() => { setIframeError(true); setIframeLoaded(false); }}
-                    sandbox="allow-scripts allow-same-origin allow-popups"
-                  />
-                </div>
-              ) : (
-                <div style={{
-                  padding: 32, textAlign: "center", borderRadius: 12,
-                  background: "#161b22", border: "1px dashed #30363d",
-                }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
-                  <div style={{ fontSize: 12, color: "#8b949e", lineHeight: 1.6 }}>
-                    위에서 Redash Public URL을 입력하면<br/>
-                    실시간 대시보드가 여기에 표시됩니다
-                  </div>
-                  <div style={{
-                    marginTop: 12, padding: 10, borderRadius: 8,
-                    background: "#0d1117", border: "1px solid #30363d",
-                    fontSize: 10, color: "#484f58", textAlign: "left", lineHeight: 1.8,
-                  }}>
-                    <strong style={{ color: "#8b949e" }}>설정 방법:</strong><br/>
-                    1. <code style={{ color: "#00b894" }}>./scripts/bootstrap.sh</code> 실행<br/>
-                    2. <code style={{ color: "#00b894" }}>http://localhost:5000</code> 접속 → 관리자 생성<br/>
-                    3. <code style={{ color: "#00b894" }}>python setup_redash.py --api-key KEY</code><br/>
-                    4. 대시보드 → 공유 → Public URL 복사 → 여기에 붙여넣기
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        <div style={{
-          padding: "10px 16px", borderTop: "1px solid #21262d",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          background: "#0d1117",
-        }}>
-          <span style={{ fontSize: 9, color: "#484f58" }}>
-            Powered by Redash · 데이터 기반 의사결정
-          </span>
-          <span style={{ fontSize: 10, color: "#f39c12", fontWeight: 600 }}>
-            💰 {coins} 코인
-          </span>
-        </div>
+        <button
+          onClick={onClose}
+          style={{
+            padding: "12px 32px", borderRadius: 12, border: "none",
+            background: "linear-gradient(135deg, #00b894, #00cec9)",
+            color: "#fff", fontSize: 14, fontWeight: 700,
+            cursor: "pointer",
+          }}>
+          닫기
+        </button>
       </div>
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
     </div>
   );
 }
@@ -1297,12 +815,22 @@ function ActivationStage({ onComplete, addScore }) {
     if (phase !== "charge") return;
     const iv = setInterval(() => {
       setCharge(c => {
-        if (c >= 100) { clearInterval(iv); addScore(100, "energy"); setTimeout(onComplete, 500); return 100; }
+        if (c >= 100) {
+          clearInterval(iv);
+          return 100;
+        }
         return c + 2;
       });
     }, 50);
     return () => clearInterval(iv);
   }, [phase]);
+
+  useEffect(() => {
+    if (charge >= 100) {
+      addScore(100, "energy");
+      setTimeout(onComplete, 500);
+    }
+  }, [charge]);
 
   return (
     <div style={{ textAlign: "center", padding: 16 }}>
@@ -1356,37 +884,43 @@ function DryElectrodeStage({ onComplete, addScore }) {
   };
 
   return (
-    <div style={{ textAlign: "center", padding: 16 }}>
+    <div style={{ textAlign: "center", padding: 20, background: "#1a1a2e", borderRadius: 12 }}>
+      <h2 style={{ color: "#fdcb6e", marginBottom: 16, fontSize: 18 }}>
+        🌟 건식 전극 공정 - 분말 코팅
+      </h2>
       <div style={{
-        display: "inline-block", padding: "4px 12px", marginBottom: 12,
-        background: "linear-gradient(90deg, #fdcb6e22, #f39c1222)", borderRadius: 8,
-        fontSize: 11, color: "#e17055", fontWeight: 600, border: "1px solid #fdcb6e",
-      }}>🌟 건식 공정: 용매 불요! 시간 75% 단축</div>
-      <div style={{
-        width: "90%", maxWidth: 400, height: 120, margin: "0 auto 16px",
-        background: "linear-gradient(180deg, #dfe6e9, #b2bec3)", borderRadius: 10,
-        border: "3px solid #95a5a6", position: "relative", overflow: "hidden",
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 12,
+        maxWidth: 400,
+        margin: "0 auto 20px"
       }}>
-        <div style={{ position: "absolute", top: 6, left: 10, fontSize: 10, color: "#636e72", fontWeight: 600 }}>
-          전극 표면 — 분말 직접 코팅
-        </div>
         {spots.map((s, i) => (
-          <button key={i} onClick={() => handleSpot(i)} style={{
-            position: "absolute", left: `${s.x}%`, top: `${s.y}%`, width: "22%", height: "35%",
-            borderRadius: 8, border: powder.includes(i) ? "2px solid #00b894" : "2px dashed #e17055",
-            background: powder.includes(i) ? "#00b89466" : "transparent",
-            cursor: powder.includes(i) ? "default" : "pointer", fontSize: 18,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
+          <button
+            key={i}
+            onClick={() => handleSpot(i)}
+            style={{
+              padding: "20px",
+              fontSize: 24,
+              borderRadius: 12,
+              border: powder.includes(i) ? "3px solid #00b894" : "3px dashed #e17055",
+              background: powder.includes(i) ? "#00b894" : "#2d2d44",
+              color: "#fff",
+              cursor: powder.includes(i) ? "default" : "pointer",
+              transition: "all 0.3s",
+            }}
+          >
             {powder.includes(i) ? "✅" : "🔘"}
           </button>
         ))}
-        <div style={{ position: "absolute", bottom: 0, width: "100%", height: 5, background: "#2d3436" }}>
-          <div style={{ width: `${(powder.length / spots.length) * 100}%`, height: "100%", background: "#00b894" }} />
-        </div>
       </div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: "#6c5ce7" }}>
-        코팅: {Math.round((powder.length / spots.length) * 100)}%
+      <div style={{
+        fontSize: 16,
+        fontWeight: 700,
+        color: powder.length === spots.length ? "#00b894" : "#fdcb6e",
+        marginTop: 16
+      }}>
+        진행률: {powder.length}/{spots.length} ({Math.round((powder.length / spots.length) * 100)}%)
       </div>
     </div>
   );
@@ -1771,7 +1305,7 @@ export default function BatteryGame() {
               background: "linear-gradient(135deg, #e74c3c, #f39c12)", color: "#fff", cursor: "pointer",
             }}>📊 Redash 분석</button>
             <button onClick={() => setShowLeaderboard(true)} style={{
-              padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20, border: "none",
+              padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 20,
               background: "#21262d", color: "#e6edf3", cursor: "pointer", border: "1px solid #30363d",
             }}>🏆 랭킹</button>
             <button onClick={startGame} style={{

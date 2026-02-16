@@ -6,9 +6,14 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 3000,
+    // 백엔드 API 프록시 (Docker 서비스에 연결)
     proxy: {
       "/api": {
-        target: "http://backend:5001",
+        target: "http://localhost:5001",  // Docker 외부에서 접근
+        changeOrigin: true,
+      },
+      "/health": {
+        target: "http://localhost:5001",
         changeOrigin: true,
       },
     },
