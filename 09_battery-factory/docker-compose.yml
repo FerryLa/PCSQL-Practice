@@ -1,0 +1,162 @@
+# ═══════════════════════════════════════════════════════════════
+# Battery Factory Game - Full Stack Docker Compose
+# FastAPI Backend + PostgreSQL (Game DB) + Redash + Redis
+# ═══════════════════════════════════════════════════════════════
+# 아키텍처:
+#   React Game → FastAPI (5001) → PostgreSQL (game_db)
+#                                       ↑
+#                               Redash (5000) ← 쿼리 & 시각화
+# ═══════════════════════════════════════════════════════════════
+
+x-redash-service: &redash-service
+  image: redash/redash:25.1.0
+  depends_on:
+    - redash-postgres
+    - redis
+  env_file: ./redash/.env
+  restart: always
+
+services:
+  # ─────────────────────────────────────────────
+  # 1. Game Database (PostgreSQL) - 게임 데이터 저장
+  # ─────────────────────────────────────────────
+  game-db:
+    image: postgres:16-alpine
+    container_name: battery-game-db
+    environment:
+      POSTGRES_DB: battery_game
+      POSTGRES_USER: battery_admin
+      POSTGRES_PASSWORD: ${GAME_DB_PASSWORD:-battery_secure_2024}
+    ports:
+      - "5433:5432"
+    volumes:
+      - game_db_data:/var/lib/postgresql/data
+      - ./scripts/init_game_db.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U battery_admin -d battery_game"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - battery-network
+
+  # ─────────────────────────────────────────────
+  # 2. FastAPI Backend - 게임 API 서버
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: battery-backend
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://battery_admin:${GAME_DB_PASSWORD:-battery_secure_2024}@game-db:5432/battery_game
+      DATABASE_URL_SYNC: postgresql://battery_admin:${GAME_DB_PASSWORD:-battery_secure_2024}@game-db:5432/battery_game
+      REDASH_URL: http://redash-server:5000
+      REDASH_API_KEY: ${REDASH_API_KEY:-}
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:5001"]'
+    depends_on:
+      game-db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - battery-network
+
+  # ─────────────────────────────────────────────
+  # 3. Redash - 데이터 시각화 & 대시보드
+  # ─────────────────────────────────────────────
+  redash-server:
+    <<: *redash-service
+    container_name: redash-server
+    command: server
+    ports:
+      - "5000:5000"
+    environment:
+      REDASH_WEB_WORKERS: 4
+    networks:
+      - battery-network
+
+  redash-scheduler:
+    <<: *redash-service
+    container_name: redash-scheduler
+    command: scheduler
+    environment:
+      QUEUES: "celery"
+      WORKERS_COUNT: 1
+    networks:
+      - battery-network
+
+  redash-worker:
+    <<: *redash-service
+    container_name: redash-worker
+    command: worker
+    environment:
+      QUEUES: "scheduled_queries,schemas,queries,periodic,default"
+      WORKERS_COUNT: 2
+    networks:
+      - battery-network
+
+  # ─────────────────────────────────────────────
+  # 4. Redash Internal DB (PostgreSQL)
+  # ─────────────────────────────────────────────
+  redash-postgres:
+    image: postgres:16-alpine
+    container_name: redash-postgres
+    environment:
+      POSTGRES_DB: redash
+      POSTGRES_USER: redash
+      POSTGRES_PASSWORD: ${REDASH_DB_PASSWORD:-redash_secure_2024}
+    volumes:
+      - redash_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redash -d redash"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - battery-network
+
+  # ─────────────────────────────────────────────
+  # 5. Redis - Redash 큐 & 캐싱
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: battery-redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - battery-network
+
+
+  # ─────────────────────────────────────────────
+  # 6. Frontend (React) - 게임 클라이언트
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: ${FRONTEND_MODE:-dev} # dev 또는 prod
+    container_name: battery-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - battery-network
+
+volumes:
+  game_db_data:
+  redash_db_data:
+  redis_data:
+
+networks:
+  battery-network:
+    driver: bridge
