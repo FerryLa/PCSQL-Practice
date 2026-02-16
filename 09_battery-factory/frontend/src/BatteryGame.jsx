@@ -1528,11 +1528,23 @@ export default function BatteryGame() {
               border: "none", letterSpacing: 1, cursor: "pointer",
               background: "linear-gradient(135deg, #00b894, #00a885)",
               color: "#fff", boxShadow: "0 6px 24px rgba(0,184,148,0.35)",
-              transition: "all 0.2s",
+              transition: "all 0.2s", marginBottom: 12,
             }}
             onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 10px 32px rgba(0,184,148,0.5)"; }}
             onMouseLeave={e => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 6px 24px rgba(0,184,148,0.35)"; }}
           >▶ 공정 시작</button>
+
+          <button onClick={() => setShowRedash(true)}
+            style={{
+              padding: "12px 32px", fontSize: 14, fontWeight: 700, borderRadius: 20,
+              border: "1px solid #30363d", cursor: "pointer",
+              background: "linear-gradient(135deg, #e74c3c, #f39c12)",
+              color: "#fff", boxShadow: "0 4px 16px rgba(231,76,60,0.25)",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 6px 20px rgba(231,76,60,0.4)"; }}
+            onMouseLeave={e => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 4px 16px rgba(231,76,60,0.25)"; }}
+          >📊 리더보드 & 분석</button>
 
           {highScore > 0 && (
             <div style={{ marginTop: 14, fontSize: 12, color: "#f39c12", fontWeight: 600 }}>
@@ -1544,6 +1556,14 @@ export default function BatteryGame() {
         <div style={{ marginTop: 16, fontSize: 10, color: "#484f58", zIndex: 1, textAlign: "center" }}>
           리튬이온 배터리 제조 시뮬레이션 · 7단계 공정 체험
         </div>
+
+        {showRedash && (
+          <RedashDashboard
+            gameData={{ kpiHistory, stageResults, currentKpi, coins, defectLog, yieldRate }}
+            isOpen={showRedash} onClose={() => setShowRedash(false)}
+            onDecision={setStrategy} upgrades={ownedUpgrades}
+          />
+        )}
 
         <style>{`
           @keyframes float { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-20px) rotate(10deg); } }

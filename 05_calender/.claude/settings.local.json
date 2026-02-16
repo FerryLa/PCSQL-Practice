@@ -40,7 +40,8 @@
       "Bash(done)",
       "Bash(for id in 1 2 3 4 5 6 7)",
       "Bash(__NEW_LINE_ecee02a1f60cd52d__ echo \"\")",
-      "Bash(__NEW_LINE_e7e7dc3765b12f34__ echo \"\")"
+      "Bash(__NEW_LINE_e7e7dc3765b12f34__ echo \"\")",
+      "Bash(docker-compose restart:*)"
     ]
   }
 }
