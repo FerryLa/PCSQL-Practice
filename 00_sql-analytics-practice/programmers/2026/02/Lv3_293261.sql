@@ -1,7 +1,7 @@
 -- Site   : Programmers
 -- Title  : 물고기 종류 별 대어 찾기 (LEVEL 3)
 -- Link   : https://school.programmers.co.kr/learn/courses/30/lessons/293261
--- Date   : 2026-02-17
+-- Date   : 2026-02-17 / 2026-02-21
 
 WITH ranked AS (
     SELECT
