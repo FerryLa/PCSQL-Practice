@@ -5,19 +5,21 @@
 
 WITH ranked AS (
     SELECT
-        F.FISH_ID,
+        F.ID,
         FN.FISH_NAME,
         F.LENGTH,
-        ROW_NUM() OVER(
+        ROW_NUMBER() OVER(
             PARTITION BY F.FISH_TYPE
-            ORDER BY F.FISH_ID ASC
-        )
+            ORDER BY F.LENGTH DESC
+        ) AS rn
     FROM FISH_INFO F
-    JOIN FISH_NAME_INFO FN ON F.FISH_ID = FN.FISH_I
+    JOIN FISH_NAME_INFO FN ON F.FISH_TYPE = FN.FISH_TYPE
+    WHERE F.LENGTH IS NOT NULL
 )
-SELECT FISH_ID, FISH_NAME, LENGTH
+SELECT ID, FISH_NAME, LENGTH
 FROM ranked
-WHERE = 1
-ORDER BY FISH_ID ASC;
+WHERE rn = 1
+ORDER BY ID ASC;
 
--- 시간 초과
+-- IS NOT NULL 조건 확인
+
